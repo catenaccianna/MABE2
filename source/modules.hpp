@@ -19,6 +19,9 @@
 
 // Placement Modules
 
+//Analysis Module
+#include "analyze/AnalyzePangenome.hpp"
+
 // Selection Modules
 #include "select/SelectElite.hpp"
 #include "select/SelectLexicase.hpp"

@@ -1,0 +1,20 @@
+random_seed = 0;                // Seed for random number generator; use 0 to base on time.
+Population main_pop;
+Population next_pop;
+
+Value pop_size = 1000;
+
+CommandLine cl;
+FileOutput output;
+
+EvalNK eval_nk;
+SelectTournament select_t;
+
+GrowthPlacement place_next;
+MovePopulation sync_gen;
+
+BitsOrg bits_org;
+
+@start() print("random_seed = ", random_seed, "\n");
+@start() inject("bits_org", "main_pop", pop_size);
+@update(1000) exit();
