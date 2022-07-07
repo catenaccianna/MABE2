@@ -35,7 +35,7 @@
 #include "../../core/SigListener.hpp"
 
 // DeBruijn Graph tools
-#include "../../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.h"
+#include "../../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
 
 /*
 ///  AGENDA!
