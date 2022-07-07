@@ -5,6 +5,10 @@
  *
  *  @file  AnalyzePangenome.hpp
  *  @brief Crossover operator that tracks all existing genomes in order to randomly generate new genomes.
+ * 
+ * Things we are changing in expirimentation: P probability in modify_org, whether we have sequence count or no sequence count. 
+ * Make these a double and a bool that you can put into the contructor. A member variable/trait that must be specified by the user of the module.
+ * Will probably have to change tests after this is done.
  */
 
 #ifndef MABE_ANALYZE_PANGENOME_HPP
@@ -20,20 +24,19 @@ namespace mabe {
 
   class AnalyzePangenome : public Module {
   private:
-    //std::shared_ptr<DeBruijnGraph> pangenome_graph;
+    double probability; // Probability that the genome of an organism is modified with the DBGraph before it mutates.
+    bool count_kmers; // If true, a kmer in the DBGraph can only be used the same number of times it appears in the pangenome.
     DeBruijnGraph pangenome_graph;
-    std::string unique_genotypes;
 
   public:
     AnalyzePangenome(mabe::MABE & control,
           const std::string & name="AnalyzePangenome",
           const std::string & desc="Module to generate a random new genetic sequence based on existing pangenome",
-          const std::string & _unique="unique_genotypes")
+          double _probability=1, bool _count_kmers=1)
       : Module(control, name, desc)
-      , unique_genotypes(_unique)
+      , probability(_probability), count_kmers(_count_kmers)
     {
       SetAnalyzeMod(true);
-      //pangenome_graph = std::make_shared<DeBruijnGraph>();
     }
     ~AnalyzePangenome() {  }
 
@@ -41,28 +44,25 @@ namespace mabe {
     static void InitType(emplode::TypeInfo & info) {    }
 
     void SetupConfig() override {
-      LinkVar(unique_genotypes, "unique_genotypes", "Number of unique genotypes in the population");
+      LinkVar(probability, "probability", "Probability that the genome of an organism is modified with the DBGraph before it mutates.");
+      LinkVar(count_kmers, "count_kmers", "If true, a kmer in the DBGraph can only be used the same number of times it appears in the pangenome.");
     }
 
-    // data_collect.hpp Unique function for unique genotypes in population?!
-    // maybe make a member function for this? unsure because if I put it in an On or Before function,
-    // would it go through the whole population to calculate the unique number like 1000 times? n^2 then
-    // so maybe make my own member function like Evaluate in EvalNK.hpp
-
-    void SetupModule() override {
-      AddOwnedTrait<int>(unique_genotypes, "unique genotypes in population", 0);
-    }
+    void SetupModule() override {    }
 
     void OnInjectReady(Organism & bit_org, Population & pop) override {
       pangenome_graph.add_sequence(bit_org.ToString());
-      //bit_org.SetTrait<int>(unique_genotypes);
     }
 
     void BeforeMutate(Organism & bit_org) override {
       // modify the organism & do the actual crossover
-      //when we want to do the probability test, all we need to change is to put a number in for the third parameter 
-      //string new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), 0.01);
-      string new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString());
+      string new_genome;
+      if(count_kmers){
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability);
+      }
+      else{
+        new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
+      }
       bit_org.GenomeFromString(new_genome); //pass in organism reference and change its genome
     }
     
