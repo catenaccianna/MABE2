@@ -37,42 +37,6 @@
 // DeBruijn Graph tools
 #include "../../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
 
-/*
-///  AGENDA!
-
-hook into automatic testing suite:
-- pull in auto testing branch from austin - check with him about this first 
-(I am on his empirical branch of virtual_cppu_merge and I believe Emily's master branch of MABE before the merge)
-- tests/components -> add analyze directory, model it off the other ones and copy makefiles and replace names.
-- at component level, edit makefile to add analyze to the list of names for folders to look in
-- commit and maybe push to my fork before merging austins in just in case anything goes wrong
-
-
-population size, mutation rate, n, k are important variables. we want a problem that will not max out the fitness at first so we can see 
-if pangenomes actually help
-we want a stich where fitness will plateu consistently but to know there is a higher value out there. small ns and ks so we can count them
-k = 3 so we have 4 dependent bits. 2^4 sites = 16 x 100 n (bits) = 1600 possible entire combinations?
-
-is there a way to effectively ennumerate the values we need? They're all kinda overlapping
-could also reduce n enough that we can just count the sites
-
-tournanment selection is already aftificially bad, so we can use something better when we get to 
-30 replicants for each. Tournament will be good to start with though, because we know that the results can always be better
-
-First, run small trials on my computer to get a sense of what behavior we can expect from changing the different variables
-Next, 30 replicates of control runs (w/o analysis module) in hpcc
-      30 experiment runs with complete random choices at each branch
-      30 expiriment runs with tunable probability (P from emp::random) of selecting non-starting genome from graph
-Data we want to keep track of--fitness, # of unique genomes, print full pangenome every 10ish generations so we can see how it changes (julia???)
-Will use R for data analysis if possible-can also use python or python wrapped in R for the hard parts of code
-
-If wanted later can calculate a statistical distribution that will tell us if our randomness falls within the expected distribution
-I believe this is already done from emp::random generator, but can do it for my genomes
-
-today -- make test cases pass: in DBGraph, make an endpoint check so we have an appropriate lengthed genome
-      -- make traversal make more sense if we are displaying things
-*/
-
 TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"){
 {
 // ======================= INITIALIZATION ===================================
@@ -125,13 +89,11 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     // graph--unsure if these will actually be usable genetic information segments
 
     std::vector<std::string> old_pop;
-    //DeBruijnGraph new_graph;
     // call BeforeMutate to try to change all the genomes to a generated debruijn sequence
     for(i = 0; i < pop.GetSize(); ++i){
       old_pop.push_back(pop[i].ToString());
       analysis_mod.BeforeMutate(pop[i]);
       analysis_mod.OnMutate(pop[i]);
-      //new_graph.add_sequence(pop[i]->ToString());
     }
     REQUIRE(i == 400);
     REQUIRE(int(i) == debruijn.get_sequence_size());
@@ -152,7 +114,7 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     REQUIRE(differences > 0);
 
 
-// ======================= BEFORE DEATH - very unfinished ah ha ha ===================================
+// ======================= BEFORE DEATH ===================================
 
     //int seq_count = new_graph.get_value(pop.begin()->ToString()).get_sequence_count();
     analysis_mod.BeforeDeath(pop.begin());                      // removes sequence from the module graph
@@ -164,6 +126,7 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     
 
     REQUIRE(1 == 1);
+    
   }
 }
 
