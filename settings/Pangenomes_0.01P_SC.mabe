@@ -29,13 +29,13 @@ AnalyzePangenome pangenome {
     count_kmers = 1;        // Kmers can only be used (at maximum) the number of times they appear in the living pangenome.
 };
 
-DataFile fit_file { filename="fitness"+random_seed+".csv"; };
+DataFile fit_file { filename="fitness.csv"; };
 fit_file.ADD_COLUMN( "Random Seed", "random_seed" );
 fit_file.ADD_COLUMN( "Time Step", "ud" );
 fit_file.ADD_COLUMN( "Average Fitness", "main_pop.CALC_MEAN('fitness')" );
 fit_file.ADD_COLUMN( "Maximum Fitness", "main_pop.CALC_MAX('fitness')" );
 fit_file.ADD_COLUMN( "Dominant Fitness", "main_pop.CALC_MODE('fitness')" );
-//fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_MODE('fitness')" );
+fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_RICHNESS('bits')" );
 
 
 @START() {
