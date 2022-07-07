@@ -28,7 +28,7 @@ DataFile fit_file { filename="fitness.csv"; };
 fit_file.ADD_COLUMN( "Average Fitness", "main_pop.CALC_MEAN('fitness')" );
 fit_file.ADD_COLUMN( "Maximum Fitness", "main_pop.CALC_MAX('fitness')" );
 fit_file.ADD_COLUMN( "Dominant Fitness", "main_pop.CALC_MODE('fitness')" );
-//fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_MODE('fitness')" );
+fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_RICHNESS('bits')" );
 
 
 @START() {
@@ -37,7 +37,7 @@ fit_file.ADD_COLUMN( "Dominant Fitness", "main_pop.CALC_MODE('fitness')" );
 };
 
 @UPDATE(Var ud) {
-    IF (ud == 100) EXIT();
+    IF (ud == 1000) EXIT();
 
     eval_nk.EVAL(main_pop);
 
@@ -46,8 +46,8 @@ fit_file.ADD_COLUMN( "Dominant Fitness", "main_pop.CALC_MODE('fitness')" );
         "  MainPopSize=", main_pop.SIZE(),
         "  AveFitness=", main_pop.CALC_MEAN("fitness"),
         "  Num org bits:     ", bits_org.N,
-        //"  Num unique genotypes:     ", bits_org.
-        //"  org bits:     ", bits_org.ToString()
+        "  Num unique genotypes:     ", main_pop.CALC_RICHNESS("bits")
+        //"\norg bits:     ", bits_org.ToString()
        );
 
     IF (ud % 10 == 0){
