@@ -9,6 +9,7 @@
 
 // Analyze Modules
 #include "analyze/SystematicsModule.hpp"
+#include "analyze/AnalyzePangenome.hpp"
 
 // Evaluation Modules
 #include "evaluate/games/EvalMancala.hpp"
