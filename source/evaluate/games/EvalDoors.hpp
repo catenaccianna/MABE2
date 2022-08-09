@@ -105,6 +105,8 @@ namespace mabe {
     public:
     using org_t = VirtualCPUOrg;
 
+    public:
+    bool verbose = false; ///< Do we print extra info?
     protected:
     emp::Random& rand;  ///< Reference to the main random number generator of MABE
     emp::vector<int> starting_cue_vec; /**< Vector of set cue values or random cue 
@@ -245,6 +247,16 @@ namespace mabe {
     /// Move the organism through its chosen door
     double Move(DoorsState& state, DoorsState::data_t door_idx){
       if(!state.initialized) InitializeState(state);
+      if(verbose){
+        size_t target_idx = 0;
+        for(size_t i = 0; i < GetNumDoors(); ++i){
+          if(state.cue_vec[i] == state.current_cue){
+            target_idx = i;
+            break;
+          }
+        }
+        std::cout << "[DOORS] " << door_idx << "," << target_idx << std::endl;
+      }
       // Increase bookkeeping variables
       state.doors_taken_vec[door_idx]++;
       if(state.current_cue == state.cue_vec[exit_cue_idx]) state.exit_rooms_visited++;
@@ -310,6 +322,8 @@ namespace mabe {
     /// Set up variables for configuration script
     void SetupConfig() override {
       LinkPop(pop_id, "target_pop", "Population to evaluate.");
+      LinkVar(evaluator.verbose, "verbose", 
+           "Should we print extra info?");
       LinkVar(trait_names.score_trait, "score_trait", 
            "Which trait stores task performance?");
       LinkVar(trait_names.accuracy_trait, "accuracy_trait", 

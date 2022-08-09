@@ -56,15 +56,36 @@ namespace mabe {
       AddRequiredTrait<double>(trait); ///< The fitness trait must be set by another module.
       AddOwnedTrait<bool>(reset_self_trait, "Does org need reset?", false); ///< Allow organisms to reset themselves 
     }
-
+    
+    /// Run organisms in a population a certain number of updates or until one reproduces
+    double Evaluate(const Collection & orgs, size_t max_updates, bool stop_at_birth = true) {
+      mabe::Collection alive_orgs( orgs.GetAlive() );
+      for (Organism & org : alive_orgs) {
+        const size_t original_pop_size = alive_orgs.GetFirstPop()->GetSize();
+        for(size_t update = 0; update < max_updates; ++update){
+          org.ProcessStep();
+          if(stop_at_birth && alive_orgs.GetFirstPop()->GetSize() > original_pop_size){
+            return 1;
+          }
+        }
+      }
+      return 0;
+    }
+    
     /// Set up member functions associated with this class.
     static void InitType(emplode::TypeInfo & info) {
       info.AddMemberFunction(
-        "SCHEDULE",
-        [](SchedulerProbabilistic & mod) {
-          return mod.Schedule();
-        },
-        "Perform one round of scheduling");
+          "SCHEDULE",
+          [](SchedulerProbabilistic & mod) {
+            return mod.Schedule();
+          },
+          "Perform one round of scheduling");
+      info.AddMemberFunction(
+          "EVAL",
+          [](SchedulerProbabilistic & mod, Collection list, size_t num_updates, 
+                bool stop_at_birth){ 
+              return mod.Evaluate(list, num_updates, stop_at_birth); 
+          }, "Run orgs in OrgList a certain number of updates or until one reproduces.");
     }
 
     /// Ration out updates to members of the population
