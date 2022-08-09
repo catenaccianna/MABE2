@@ -78,6 +78,8 @@ namespace mabe {
     emp::Random& rand;          ///< Reference to the main random number generator of MABE
     
     public: 
+    bool verbose = false;
+
     PatchHarvestEvaluator(emp::Random& _rand) : map_data_vec(), rand(_rand){ ; } 
 
     /// Fetch the number of maps that are currently stored 
@@ -171,7 +173,10 @@ namespace mabe {
       int tile_id = state.status.Scan(GetCurPath(state).grid);
       bool has_been_visited = state.visited_tiles.Get(
           state.status.GetIndex(GetCurPath(state).grid));
-      std::cout << "Current tile: " << tile_id << "; visited: " << has_been_visited << std::endl;
+      if(verbose){
+        std::cout << "Current tile: " << tile_id << 
+            "; visited: " << has_been_visited << std::endl;
+      }
       if(!has_been_visited && (tile_id == Tile::NUTRIENT || tile_id == Tile::NUTRIENT_EDGE)){
         return 1;
       } 
@@ -183,25 +188,25 @@ namespace mabe {
       if(!state.initialized) InitializeState(state);
       // Mark *old* tile as visited
       MarkVisited(state);
-      std::cout << "[HARVEST] move" << std::endl;
+      if(verbose) std::cout << "[HARVEST] move" << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
       state.raw_score += score;
-      std::cout << "Score: " << state.raw_score << std::endl;
+      if(verbose) std::cout << "Score: " << state.raw_score << std::endl;
       return GetNormalizedScore(state);
     }
     
     /// Rotate the organism clockwise by 45 degrees
     void RotateRight(PatchHarvestState& state){
       if(!state.initialized) InitializeState(state);
-      std::cout << "[HARVEST] rot_right" << std::endl;
+      if(verbose) std::cout << "[HARVEST] rot_right" << std::endl;
       state.status.Rotate(1);
     }
 
     /// Rotate the organism counterclockwise by 45 degrees
     void RotateLeft(PatchHarvestState& state){
       if(!state.initialized) InitializeState(state);
-      std::cout << "[HARVEST] rot_left" << std::endl;
+      if(verbose) std::cout << "[HARVEST] rot_left" << std::endl;
       state.status.Rotate(-1);
     }
 
@@ -268,6 +273,8 @@ namespace mabe {
           "List of map files to load, separated by semicolons(;)");
       LinkVar(movement_trait, "movement_trait", 
           "Which trait will store a string containing the organism's sequence of moves?");
+      LinkVar(evaluator.verbose, "verbose", 
+          "If true (1), prints extra information about the organisms actions");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
