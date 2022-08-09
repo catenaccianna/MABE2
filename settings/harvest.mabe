@@ -53,6 +53,7 @@ EvalPatchHarvest patch_harvest {      // Evaluate organisms on their ability to 
   score_trait = "child_merit";    // Which trait stores path following performance?
   state_trait = "state";          // Which trait stores organisms' path follow state?
   map_filenames = "../settings/EvalPatchHarvest/test_map_4.txt"; 
+  verbose = 0;
                                 // List of map files to load, separated by semicolons(;)
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
