@@ -1,7 +1,8 @@
 random_seed = 0;                // Seed for random number generator; use 0 to base on time.
 Population main_pop;            // Collection of organisms
-Var pop_size = 3600;               // Local value variable.
-Var max_gens = 100;              // Local value variable.
+Var pop_size = 3600;            // Local value variable.
+Var max_gens = 1000000;         // Local value variable.
+Var max_updates = 250000;       // Local value variable.
 Var do_multiply = 1;            // Local value variable.
 MaxSizePlacement place_max_size { // Grow population to a given size then maintain
   target = "main_pop";            // Population(s) to manage.
@@ -128,6 +129,6 @@ Var avg_gen;
   max_file.WRITE();
   avg_gen = main_pop.CALC_MEAN("generation");
   IF(avg_gen >= max_gens) EXIT();
-  IF(ud > 200) EXIT();
+  IF(ud >= max_updates) EXIT();
 };
 
