@@ -123,6 +123,7 @@ namespace mabe {
       if(state.current_cue == state.cue_vec[exit_cue_idx]){
         state.correct_exits_taken++;
         state.current_cue = *(state.prev_room_vec.rbegin() + 1); // Return to previous room
+        state.prev_room_vec.pop_back();
         state.doors_correct_vec[exit_cue_idx]++;
       }
       else{
