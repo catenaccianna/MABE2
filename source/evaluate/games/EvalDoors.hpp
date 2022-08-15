@@ -107,6 +107,10 @@ namespace mabe {
 
     public:
     bool verbose = false; ///< Do we print extra info?
+    double correct_doors_factor = 1.0; ///< Reward for getting a door correct
+    double correct_exits_factor = 0.0; ///< Reward for getting an exit correct
+    double incorrect_doors_factor = 1.0; ///< Penalty for getting a door wrong
+    double incorrect_exits_factor = 1.0; ///< Penalty for getting an exit wrong
     protected:
     emp::Random& rand;  ///< Reference to the main random number generator of MABE
     emp::vector<int> starting_cue_vec; /**< Vector of set cue values or random cue 
@@ -141,8 +145,11 @@ namespace mabe {
     
     /// Calculate the score for the given state
     double GetScore(const DoorsState& state) const{
-      double score = 1.0 + state.correct_doors_taken - state.incorrect_doors_taken - 
-          state.incorrect_exits_taken;
+      double score = 1.0 
+          + (state.correct_doors_taken * correct_doors_factor)
+          + (state.correct_exits_taken * correct_exits_factor)
+          - (state.incorrect_doors_taken * incorrect_doors_factor) 
+          - (state.incorrect_exits_taken * incorrect_exits_factor);
       // Truncate negative scores
       return (score >= 0) ? score : 0;
     }
@@ -325,6 +332,14 @@ namespace mabe {
       LinkPop(pop_id, "target_pop", "Population to evaluate.");
       LinkVar(evaluator.verbose, "verbose", 
            "Should we print extra info?");
+      LinkVar(evaluator.correct_doors_factor, "correct_door_reward", 
+           "Reward for getting a single door correct");
+      LinkVar(evaluator.correct_exits_factor, "correct_exit_reward", 
+           "Reward for getting a single exit correct");
+      LinkVar(evaluator.incorrect_doors_factor, "incorrect_door_penalty", 
+           "Penalty for getting a single door incorrect");
+      LinkVar(evaluator.incorrect_exits_factor, "incorrect_exit_penalty", 
+           "Penalty for getting a single exit incorrect");
       LinkVar(trait_names.score_trait, "score_trait", 
            "Which trait stores task performance?");
       LinkVar(trait_names.accuracy_trait, "accuracy_trait", 
