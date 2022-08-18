@@ -44,7 +44,7 @@ fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_RICHNESS('bits')" );
 };
 
 @UPDATE(Var ud) {
-    IF (ud == 1000) EXIT();
+    IF (ud == 100) EXIT();
 
     eval_nk.EVAL(main_pop);
 
@@ -54,12 +54,7 @@ fit_file.ADD_COLUMN( "Num Unique Genotypes", "main_pop.CALC_RICHNESS('bits')" );
         "  AveFitness=", main_pop.CALC_MEAN("fitness"),
         "  Num org bits:     ", bits_org.N,
         "  Num unique genotypes:     ", main_pop.CALC_RICHNESS("bits")
-        //"  org bits:     ", bits_org.ToString()
        );
-
-    IF (ud % 10 == 0){
-      // display graph of pangenome
-    }
 
     my_selector.SELECT(main_pop, next_pop, pop_size);
 
