@@ -103,24 +103,19 @@ namespace mabe {
 
     void OnUpdate(size_t update) override {
       if(update%100==0){
-        /*for(auto i:pangenome_graph.get_all_vertices()){
-        cout<<i<<" adj_list_sz= "<<pangenome_graph.get_value(i).adj_list_size()<<" kmer_count= "<<pangenome_graph.get_value(i).get_kmer_occurrences()<<" -> ";
-        for(auto j:pangenome_graph.get_value(i).get_adj_list()){
-          cout<<j<<" ";
-        }
-        cout<<endl;}*/
         tuple<int, string, string> tup = pangenome_graph.csv_start_values();
         count = std::get<0>(tup);
         from = std::get<1>(tup);
         to = std::get<2>(tup);
-        for(int i = 0; i < pangenome_graph.edge_count()-1; ++i){
+
+        for(int i = 0; i < pangenome_graph.edge_count(); ++i){
           data.Update(); //update 4 vars as many times as we need to to go through all graph vertices
         }
         pangenome_graph.reset_vertex_flags();
       }      
     }
 
-    void BeforePlacement(Organism & bit_org, OrgPosition pos, OrgPosition parent_pos) override { //should i use this or on offspring ready?
+    void BeforePlacement(Organism & bit_org, OrgPosition pos, OrgPosition parent_pos) override {
       pangenome_graph.add_sequence(bit_org.ToString());
     }
 
