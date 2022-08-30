@@ -17,8 +17,9 @@
 #include "emp/base/vector.hpp"
 #include "emp/control/Signal.hpp"
 #include "emp/math/Random.hpp"
+#include "emp/data/DataFile.hpp"
 // Emplode
-#include "../../../Emplode/Emplode.hpp"
+//#include "../../../Emplode/Emplode.hpp"
 // MABE
 #include "../../../source/analyze/AnalyzePangenome.hpp"
 #include "../../../core/Collection.hpp"
@@ -52,8 +53,8 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     control.Setup(); //SET UP EMPTY COMES BEFORE SET UP 
 
     mabe::Population & pop = control.AddPopulation("test_pop");
-    REQUIRE(control.GetPopulation(0).GetName() == "test_pop");
-    REQUIRE(pop.GetName() == "test_pop");
+    CHECK(control.GetPopulation(0).GetName() == "test_pop");
+    CHECK(pop.GetName() == "test_pop");
 
     mabe::OrgPosition position = pop.begin(); //note: *position is an organism reference
     mabe::PopIterator position_iter = pop.begin(); //note: can call position_iter.OrgPtr()->ToString() if wanted
@@ -63,16 +64,12 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     size_t i;
     for(i = 0; i < pop.GetSize(); ++i){
       debruijn.add_sequence(pop[i].ToString()); // add the sequences to the tester debruijn graph
-      analysis_mod.OnInjectReady(pop[i], pop);  // call OnInjectReady to add the current population to the module DBGraph
+      //analysis_mod.OnInjectReady(pop[i], pop);  // Need to adjust my test here because I am now using BeforePlacement instead of OnInjectReady
     }
-    REQUIRE(i == 400);
+    CHECK(i == 400);
     pop.OK();
-    REQUIRE(pop.begin() != pop.end());
-    REQUIRE(debruijn.get_sequence_size() == int(pop.GetSize()));
-
-    //debruijn.display(); // was curious to see
-    //note: some kmers look repeated in the graph, but tested seq.s for uniqueness in the debruijn class,
-    // and the repetitions here are just caused by traversing
+    CHECK(pop.begin() != pop.end());
+    CHECK(debruijn.get_sequence_size() == int(pop.GetSize()));
 
 // ======================= BEFORE MUTATE ===================================
     /* Trigger attempts - revisit
@@ -93,15 +90,14 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     for(i = 0; i < pop.GetSize(); ++i){
       old_pop.push_back(pop[i].ToString());
       analysis_mod.BeforeMutate(pop[i]);
-      analysis_mod.OnMutate(pop[i]);
     }
-    REQUIRE(i == 400);
-    REQUIRE(int(i) == debruijn.get_sequence_size());
+    CHECK(i == 400);
+    CHECK(int(i) == debruijn.get_sequence_size());
 
     // make sure all the generated sequences are still valid within the graph
     position_iter = pop.begin();
     while(position_iter != pop.end()){
-      REQUIRE(debruijn.is_valid(position_iter.OrgPtr()->ToString()));
+      CHECK(debruijn.is_valid(position_iter.OrgPtr()->ToString()));
       position_iter++;
     }
 
@@ -111,7 +107,7 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
         differences++;
       }
     }
-    REQUIRE(differences > 0);
+    CHECK(differences > 0);
 
 
 // ======================= BEFORE DEATH ===================================
@@ -119,13 +115,14 @@ TEST_CASE("AnalyzePangenome__member_functions", "[analyze/AnalyzePangenome.hpp]"
     //int seq_count = new_graph.get_value(pop.begin()->ToString()).get_sequence_count();
     analysis_mod.BeforeDeath(pop.begin());                      // removes sequence from the module graph
     control.ClearOrgAt(pop.begin());                            // this has a BeforeDeath trigger in it
+    //CHECK(debruijn.is_valid(pop.begin()->ToString()));
     debruijn.remove_sequence(pop.begin()->ToString());          // remove sequence from the tester graph (use new_graph? this one wouldn't have the same num seq.s?)
-    REQUIRE(int(pop.GetNumOrgs()) == debruijn.get_sequence_size());
-    REQUIRE(pop.GetNumOrgs() == 399);                           // number of living organisms should be one less
-    REQUIRE(debruijn.get_sequence_size() == 399);               // total number of seq.s in graph (incremented every time an org's sequence is added) should be one less
+    CHECK(int(pop.GetNumOrgs()) == debruijn.get_sequence_size());
+    CHECK(pop.GetNumOrgs() == 399);                           // number of living organisms should be one less
+    CHECK(debruijn.get_sequence_size() == 399);               // total number of seq.s in graph (incremented every time an org's sequence is added) should be one less
     
 
-    REQUIRE(1 == 1);
+    CHECK(1 == 1);
     
   }
 }
@@ -183,7 +180,7 @@ TEST_CASE("AnalyzePangenome__update", "[analyze/AnalyzePangenome.hpp]"){
           differences++;
       }
     }
-    REQUIRE(differences > 0);
+    CHECK(differences > 0);
 
   }
 }*/
