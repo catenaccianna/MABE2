@@ -418,11 +418,13 @@ namespace mabe {
           uint32_t val = evaluator.Sense(hw.GetTrait<DoorsState>(trait_names.state_trait));
           size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
           hw.regs[reg_idx] = val;
+          if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
         };
         action_map.AddFunc<void, org_t&, const org_t::inst_t&>(
             "doors-sense", func_sense);
       }
     }
+
   };
 
   MABE_REGISTER_MODULE(EvalDoors, 

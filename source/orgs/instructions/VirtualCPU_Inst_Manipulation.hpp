@@ -55,6 +55,9 @@ namespace mabe {
         data_t tmp = hw.regs[idx_1];
         hw.regs[idx_1] = hw.regs[idx_2];
         hw.regs[idx_2] = tmp;
+        if(inst.nop_vec.size() <= 2){
+          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
+        }
       }
       else {
         size_t idx_1 = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
@@ -62,19 +65,31 @@ namespace mabe {
         data_t tmp = hw.regs[idx_1];
         hw.regs[idx_1] = hw.regs[idx_2];
         hw.regs[idx_2] = tmp;
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_MoveHead(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
         size_t dest_idx = hw.flow_head;
         if(inst.nop_vec.size() >= 2) dest_idx = hw.GetModdedHead(inst.nop_vec[1]);
-        if(!inst.nop_vec.empty()) hw.SetModdedHead(inst.nop_vec[0], dest_idx);
-        else hw.SetIP(dest_idx);
+        if(!inst.nop_vec.empty()){
+          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
+          // IP is a special case because it auto advances!
+          if(inst.nop_vec[0] % 4 == 0){
+            if(dest_idx == 0) hw.SetIP(hw.GetWorkingGenomeSize() - 1);
+            else hw.SetIP(dest_idx - 1);
+          }
+          else hw.SetModdedHead(inst.nop_vec[0], dest_idx);
+        }
+        else hw.SetIP(dest_idx - 1);
       }
       else{
         if(!inst.nop_vec.empty()){
           // IP is a special case because it auto advances!
-          if(inst.nop_vec[0] % 4 == 0) hw.SetIP(hw.flow_head - 1);
+          if(inst.nop_vec[0] % 4 == 0){
+            if(hw.flow_head == 0) hw.SetIP(hw.GetWorkingGenomeSize() - 1);
+            else hw.SetIP(hw.flow_head - 1);
+          }
           else hw.SetModdedHead(inst.nop_vec[0], hw.flow_head);
         }
         else hw.SetIP(hw.flow_head - 1);
@@ -84,11 +99,17 @@ namespace mabe {
       if(hw.expanded_nop_args){
         size_t jump_dist = hw.regs[1];
         if(inst.nop_vec.size() >= 2) jump_dist = hw.regs[inst.nop_vec[1]];
-        if(!inst.nop_vec.empty()) hw.AdvanceModdedHead(inst.nop_vec[0], jump_dist);
-        else hw.AdvanceIP(jump_dist);
+        if(!inst.nop_vec.empty()){
+          hw.AdvanceModdedHead(inst.nop_vec[0], jump_dist);
+          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
+        }
+        else hw.AdvanceIP(jump_dist + (inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2));
       }
       else{
-        if(!inst.nop_vec.empty()) hw.AdvanceModdedHead(inst.nop_vec[0], hw.regs[2]);
+        if(!inst.nop_vec.empty()){
+          hw.AdvanceModdedHead(inst.nop_vec[0], hw.regs[2]);
+          hw.AdvanceIP(1);
+        }
         else hw.AdvanceIP(hw.regs[2]);
       }
     }

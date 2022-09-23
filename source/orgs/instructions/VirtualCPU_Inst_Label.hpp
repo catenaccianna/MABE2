@@ -35,23 +35,29 @@ namespace mabe {
 
 
     void Inst_Label(org_t& /*hw*/, const org_t::inst_t& /*inst*/){ ; }
-    void Inst_SearchLabelDirectS(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchLabelDirectS(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindLabel(false, false); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
-    void Inst_SearchLabelDirectF(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchLabelDirectF(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindLabel(true, false); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
-    void Inst_SearchLabelDirectB(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchLabelDirectB(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindLabel(true, true); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
-    void Inst_SearchSeqDirectS(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchSeqDirectS(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindNopSequence(false, false); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
-    void Inst_SearchSeqDirectF(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchSeqDirectF(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindNopSequence(true, false); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
-    void Inst_SearchSeqDirectB(org_t& hw, const org_t::inst_t& /*inst*/){
+    void Inst_SearchSeqDirectB(org_t& hw, const org_t::inst_t& inst){
       hw.flow_head = hw.FindNopSequence(true, true); 
+      hw.AdvanceIP(inst.nop_vec.size());
     }
 
     /// Set up variables for configuration file

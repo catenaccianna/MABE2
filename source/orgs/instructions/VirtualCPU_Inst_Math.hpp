@@ -36,10 +36,12 @@ namespace mabe {
     void Inst_Inc(org_t& hw, const org_t::inst_t& inst){
       size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
       ++hw.regs[idx];
+      if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
     }
     void Inst_Dec(org_t& hw, const org_t::inst_t& inst){
       size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
       --hw.regs[idx];
+      if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
     }
     void Inst_Add(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
@@ -48,10 +50,12 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] + hw.regs[idx_op_2];
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination, computation is always B + C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = hw.regs[1] + hw.regs[2];
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_Sub(org_t& hw, const org_t::inst_t& inst){
@@ -61,10 +65,12 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] - hw.regs[idx_op_2];
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B - C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = hw.regs[1] - hw.regs[2];
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_Nand(org_t& hw, const org_t::inst_t& inst){
@@ -74,19 +80,23 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = ~(hw.regs[idx_op_1] & hw.regs[idx_op_2]);
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B NAND C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = ~(hw.regs[1] & hw.regs[2]);
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_ShiftL(org_t& hw, const org_t::inst_t& inst){
       size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
       hw.regs[idx] <<= 1;
+      if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
     }
     void Inst_ShiftR(org_t& hw, const org_t::inst_t& inst){
       size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
       hw.regs[idx] >>= 1;
+      if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
     }
 
     /// Set up variables for configuration file
