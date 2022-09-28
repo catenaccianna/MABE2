@@ -111,6 +111,7 @@ namespace mabe {
     double correct_exits_factor = 0.0; ///< Reward for getting an exit correct
     double incorrect_doors_factor = 1.0; ///< Penalty for getting a door wrong
     double incorrect_exits_factor = 1.0; ///< Penalty for getting an exit wrong
+    double incorrect_doors_step = 0.0; ///< Step value, the penalty for each wrong door increases by this amount 
     protected:
     emp::Random& rand;  ///< Reference to the main random number generator of MABE
     emp::vector<int> starting_cue_vec; /**< Vector of set cue values or random cue 
@@ -148,7 +149,8 @@ namespace mabe {
       double score = 1.0 
           + (state.correct_doors_taken * correct_doors_factor)
           + (state.correct_exits_taken * correct_exits_factor)
-          - (state.incorrect_doors_taken * incorrect_doors_factor) 
+          - (state.incorrect_doors_taken * 
+              (incorrect_doors_factor + incorrect_doors_step * state.incorrect_doors_taken)) 
           - (state.incorrect_exits_taken * incorrect_exits_factor);
       // Truncate negative scores
       return (score >= 0) ? score : 0;
@@ -338,6 +340,8 @@ namespace mabe {
            "Reward for getting a single exit correct");
       LinkVar(evaluator.incorrect_doors_factor, "incorrect_door_penalty", 
            "Penalty for getting a single door incorrect");
+      LinkVar(evaluator.incorrect_doors_step, "incorrect_door_step", 
+           "How much the incorrect door penalty increases each time it is applied");
       LinkVar(evaluator.incorrect_exits_factor, "incorrect_exit_penalty", 
            "Penalty for getting a single exit incorrect");
       LinkVar(trait_names.score_trait, "score_trait", 

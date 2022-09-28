@@ -61,10 +61,11 @@ EvalDoors eval_doors {      // Evaluate organisms on their ability to follow a p
   exit_rooms_trait = "exit_rooms";// Which trait stores the number of "exit rooms" visited?
   incorrect_doors_trait = "incorrect_doors";// Which trait stores the number of doors incorrectly taken?
   incorrect_exits_trait = "incorrect_exits";// Which trait stores the number of exits incorrectly taken?
-  correct_door_reward = 1;    // Reward for getting a single door correct
-  correct_exit_reward = 0;      // Reward for getting a single exit correct
-  incorrect_door_penalty = 1;   // Penalty for getting a single door incorrect
-  incorrect_exit_penalty = 1;   // Penalty for getting a single exit incorrect
+  correct_door_reward = 1;     // Reward for getting a single door correct
+  correct_exit_reward = 0;     // Reward for getting a single exit correct
+  incorrect_door_penalty = 1;  // Penalty for getting a single door incorrect
+  incorrect_door_step = 0;     // Penalty for getting a single door incorrect
+  incorrect_exit_penalty = 1;  // Penalty for getting a single exit incorrect
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
   point_mut_prob = 0.01;        // Per-site probability of a point mutations
