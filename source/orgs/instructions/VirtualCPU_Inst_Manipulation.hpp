@@ -55,9 +55,7 @@ namespace mabe {
         data_t tmp = hw.regs[idx_1];
         hw.regs[idx_1] = hw.regs[idx_2];
         hw.regs[idx_2] = tmp;
-        if(inst.nop_vec.size() <= 2){
-          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
-        }
+        hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
       }
       else {
         size_t idx_1 = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
@@ -70,10 +68,10 @@ namespace mabe {
     }
     void Inst_MoveHead(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
+        hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
         size_t dest_idx = hw.flow_head;
         if(inst.nop_vec.size() >= 2) dest_idx = hw.GetModdedHead(inst.nop_vec[1]);
         if(!inst.nop_vec.empty()){
-          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
           // IP is a special case because it auto advances!
           if(inst.nop_vec[0] % 4 == 0){
             if(dest_idx == 0) hw.SetIP(hw.GetWorkingGenomeSize() - 1);
@@ -97,13 +95,13 @@ namespace mabe {
     }
     void Inst_JumpHead(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
+        hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
         size_t jump_dist = hw.regs[1];
         if(inst.nop_vec.size() >= 2) jump_dist = hw.regs[inst.nop_vec[1]];
         if(!inst.nop_vec.empty()){
           hw.AdvanceModdedHead(inst.nop_vec[0], jump_dist);
-          hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
         }
-        else hw.AdvanceIP(jump_dist + (inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2));
+        else hw.AdvanceIP(jump_dist);
       }
       else{
         if(!inst.nop_vec.empty()){
@@ -119,6 +117,7 @@ namespace mabe {
             inst.nop_vec.empty() ? hw.inst_ptr : hw.GetModdedHead(inst.nop_vec[0]);
         if(inst.nop_vec.size() < 2) hw.regs[2] = head_val;
         else hw.regs[inst.nop_vec[1]] = head_val;
+        hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
       }
       else{
         if(inst.nop_vec.empty()) hw.regs[2] = hw.inst_ptr;
@@ -128,6 +127,8 @@ namespace mabe {
     void Inst_SetFlow(org_t& hw, const org_t::inst_t& inst){
       size_t idx = inst.nop_vec.empty() ? 2 : inst.nop_vec[0];
       hw.SetFH(hw.regs[idx]);
+      if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
+      
     }
 
     /// Set up variables for configuration file
