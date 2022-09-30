@@ -125,7 +125,7 @@ namespace mabe {
       state.prev_room_vec.push_back(state.current_cue);
       state.door_choice_vec.push_back(state.cue_vec[exit_cue_idx]);
       // Update score vars and current cue
-      if(state.current_cue == state.cue_vec[exit_cue_idx]){
+      if(state.prev_room_vec.size() > 1 && state.current_cue == state.cue_vec[exit_cue_idx]){
         state.correct_exits_taken++;
         state.current_cue = *(state.prev_room_vec.rbegin() + 1); // Return to previous room
         state.prev_room_vec.pop_back();
