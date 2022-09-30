@@ -74,10 +74,12 @@ namespace mabe {
                                            should have */
     size_t incorrect_exits_taken = 0; /**< Number of times the org took the exit when it 
                                            should *not* have */
-    size_t door_rooms_visited = 0; /// Number of "door" rooms the organism has visited
-    size_t exit_rooms_visited = 0; /// Number of "exit" rooms the organism has visited
-    emp::vector<size_t> doors_taken_vec; /// Number of times each door was taken
-    emp::vector<size_t> doors_correct_vec; /// Number of times each door was taken correctly
+    size_t door_rooms_visited = 0; ///< Number of "door" rooms the organism has visited
+    size_t exit_rooms_visited = 0; ///< Number of "exit" rooms the organism has visited
+    emp::vector<size_t> doors_taken_vec; ///< Number of times each door was taken
+    emp::vector<size_t> doors_correct_vec; ///< Number of times each door was taken correctly
+    size_t path_start_pattern_idx = 0; /**< If path start patterns are given, this is the one the organism is currently on */
+    size_t path_start_pattern_tracker = 0; ///< How far along the start pattern is the org?
 
     DoorsState() { ; }
     DoorsState(const DoorsState&){ // Ignore copy, just reset
@@ -116,6 +118,9 @@ namespace mabe {
     emp::Random& rand;  ///< Reference to the main random number generator of MABE
     emp::vector<int> starting_cue_vec; /**< Vector of set cue values or random cue 
                                             indicators (-1) */ 
+    emp::vector<emp::vector<size_t>> path_start_pattern_vec; /**< Users can define multiple 
+        "start patterns" that dictate the first few cues seen by organisms. 
+        This stores all of those start patterns */
     const size_t exit_cue_idx = 0; ///< Index of the exit in the cue vector 
     
     /// Move the organism through the "exit" door, going back one room  
@@ -206,12 +211,57 @@ namespace mabe {
       }
       std::cout << std::endl;
     }
-
-    /// Fetch a random door cue from the set
+    
+    /** Extract start patterns from the given string. Patterns are separated by semicolons. 
+            Values in each pattern are comma separated */
+    void ParsePathStartPatterns(const std::string& input_str){ 
+      std::string s(input_str);
+      // Remove all trailing ;
+      while(s[s.length() - 1] == ';') s = s.substr(0, s.length() - 1); 
+      path_start_pattern_vec.clear();
+      emp::vector<std::string> pattern_vec;
+      emp::vector<std::string> index_str_vec;
+      emp::slice(s, pattern_vec, ';');
+      std::cout << "Number of EvalDoors path start patterns: " << pattern_vec.size() 
+                << std::endl; 
+      for(std::string& pattern : pattern_vec){
+        index_str_vec.clear();
+        emp::vector<size_t> index_vec;
+        emp::slice(pattern, index_str_vec, ',');
+        for(std::string& index_str : index_str_vec){
+          const size_t index = std::stoull(index_str);
+          if(index == 0){
+            emp_error("Error! ParsePathStartPatterns expects values of 1 or greater!");
+          }
+          else if (index >= starting_cue_vec.size()){
+            emp_error("Error! ParsePathStartPatterns received an index greater than (or "
+                " equal to) the number of cues!",
+                index, starting_cue_vec.size());
+          }
+          index_vec.push_back(index);
+        }
+        path_start_pattern_vec.push_back(index_vec);
+      }
+    }
+    
+   /// Fetch a random door cue from the set
     DoorsState::data_t GetRandomCue(const DoorsState& state){
       // Offset so we don't return the exit cue
       return state.cue_vec[(rand.GetUInt() % (GetNumDoors() - 1)) + 1];
     }
+
+    /// Fetch a cue, respecting start patterns on the path 
+    DoorsState::data_t GetNextCue(const DoorsState& state){
+      if(path_start_pattern_vec.size() > 0){
+        const emp::vector<size_t> pattern = 
+            path_start_pattern_vec[state.path_start_pattern_idx];
+        if(state.path_start_pattern_tracker < pattern.size()){
+          return state.cue_vec[pattern[state.path_start_pattern_tracker]];
+        }
+      }
+      return GetRandomCue(state);
+    }
+
 
     /// Initialize all properties of a DoorsState to prepare it for the task
     void InitializeState(DoorsState& state){
@@ -250,8 +300,12 @@ namespace mabe {
           }
         }
       }
+      if(path_start_pattern_vec.size() > 0){
+        state.path_start_pattern_tracker = 0;
+        state.path_start_pattern_idx = rand.GetUInt(path_start_pattern_vec.size()); 
+      }
       // Set the initial cue
-      state.current_cue = GetRandomCue(state);
+      state.current_cue = GetNextCue(state);
     }
     
     /// Move the organism through its chosen door
@@ -274,11 +328,12 @@ namespace mabe {
       if(door_idx == exit_cue_idx) return TakeExit(state);
       // Correct door -> Reward and move on!
       if(state.cue_vec[door_idx] == state.current_cue){
+        state.path_start_pattern_tracker++;
         state.correct_doors_taken++;
         state.doors_correct_vec[door_idx]++;
         state.prev_room_vec.push_back(state.current_cue);
         state.door_choice_vec.push_back(state.cue_vec[door_idx]);
-        state.current_cue = GetRandomCue(state);
+        state.current_cue = GetNextCue(state);
       }
       // Wrong door -> Penalize and move into "wrong" room
       else{
@@ -315,6 +370,8 @@ namespace mabe {
                                             instructions to */
     std::string cues_str; /**< String version of a vector of cue values. Non-negative values 
                                are used as is, while -1 gives a random value for each trial */
+    std::string start_patterns_str; /**< String version of a vector of vectors indicating 
+                                            possible start patterns for the path. */
     EvalDoors_TraitNames trait_names;   /**<  Struct holding all of the trait names to keep 
                                               things tidy */
     
@@ -371,11 +428,16 @@ namespace mabe {
       LinkVar(cues_str, "cue_values", "A semicolon-separated string of cue values. " 
           "A non-negative value is used as is, -1 gives a random cue for each trial "
           "(first value is the exit)");
+      LinkVar(start_patterns_str, "start_patterns", 
+          "List of all possible start patterns for the paths. Empty for random. " 
+          "Semicolons separate patterns, while commas separate door indices in each pattern. "
+          "Indices start at 1 for non-exit doors.");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
     void SetupModule() override {
       evaluator.ParseCues(cues_str);
+      evaluator.ParsePathStartPatterns(start_patterns_str);
       AddSharedTrait<double>(trait_names.score_trait, "EvalDoors score", 0.0);
       AddSharedTrait<double>(trait_names.accuracy_trait, "EvalDoors accuracy", 0.0);
       AddOwnedTrait<DoorsState>(trait_names.state_trait, "Organism's EvalDoors state", { }); 
