@@ -36,6 +36,7 @@
 #include "placement/AnnotatePlacement_Position.hpp"
 #include "placement/RandomReplacement.hpp"
 #include "placement/MaxSizePlacement.hpp"
+#include "placement/NeighborPlacement.hpp"
 
 // Selection Modules
 #include "select/SelectElite.hpp"

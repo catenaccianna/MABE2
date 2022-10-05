@@ -4,9 +4,16 @@ Var pop_size = 3600;            // Local value variable.
 Var max_gens = 1000000;         // Local value variable.
 Var max_updates = 250000;       // Local value variable.
 Var do_multiply = 1;            // Local value variable.
-MaxSizePlacement place_max_size { // Grow population to a given size then maintain
-  target = "main_pop";            // Population(s) to manage.
-  max_pop_size = pop_size;        // Maximum size of the population.
+//MaxSizePlacement place_max_size { // Grow population to a given size then maintain
+//  target = "main_pop";            // Population(s) to manage.
+//  max_pop_size = pop_size;        // Maximum size of the population.
+//};
+NeighborPlacement grid_placement{
+  grid_height = 60;             // Height of the grid the population lives on
+  grid_width = 60;              // Width of the grid the population lives on
+  target = "main_pop";          // Population(s) to manage.
+  use_moore_neighborhood = 1;   // If true, use a Moore neighborhood.
+                                    // If false, use a von Neumann neighborhood
 };
 AnnotatePlacement_Position pos_annotater { // Store org's position as trait on placement.
   target = "main_pop";      // Population(s) to annotate
@@ -129,6 +136,7 @@ Var avg_gen;
   fit_file.WRITE();
   max_file.WRITE();
   avg_gen = main_pop.CALC_MEAN("generation");
+  ////grid_placement.PRINT(main_pop);
   IF(avg_gen >= max_gens) EXIT();
   IF(ud >= max_updates) EXIT();
 };

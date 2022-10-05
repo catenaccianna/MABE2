@@ -216,6 +216,7 @@ namespace mabe {
                  "Population can only PushEmpty() if empty_org is provided.");
       size_t pos = orgs.size();
       orgs.resize(orgs.size()+1, empty_org);
+      orgs[pos]->SetPopulation(*this);
       return iterator_t(this, pos);
     }
 

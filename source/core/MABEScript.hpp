@@ -55,7 +55,9 @@ namespace mabe {
     auto BuildTraitEquation(const emp::DataLayout & data_layout, std::string equation) {
       auto pp_equ = Preprocess(equation, true);
       auto dm_fun = dm_parser.BuildMathFunction(data_layout, pp_equ.result, pp_equ.values);
-      return [dm_fun](const Organism & org){ return dm_fun(org.GetDataMap()); };
+      return [dm_fun](const Organism & org){ 
+        if(!org.IsEmpty()) return dm_fun(org.GetDataMap()); 
+      };
     }
 
     /// Scan an equation and return the names of all traits it is using.
@@ -155,7 +157,10 @@ namespace mabe {
         auto get_fun = [trait_id, result_type](const Organism & org) {
           return org.GetTraitAsString(trait_id, result_type);
         };
-        auto fun = BuildCollectFun<std::string, Collection>(summary_type, get_fun);
+        auto valid_fun = [](const Organism & org){
+          return !org.IsEmpty();
+        };
+        auto fun = BuildCollectFun<std::string, Collection>(summary_type, get_fun, valid_fun);
 
         // If we are coming from a Population, first convert to a collection.
         if constexpr (std::is_same<FROM_T,Population>()) {
@@ -168,7 +173,10 @@ namespace mabe {
 
       // If we made it here, we are numeric.
       auto get_fun = BuildTraitEquation(data_layout, trait_fun);
-      auto fun = BuildCollectFun<double, Collection>(summary_type, get_fun);
+      auto valid_fun = [](const Organism & org){
+        return !org.IsEmpty();
+      };
+      auto fun = BuildCollectFun<double, Collection>(summary_type, get_fun, valid_fun);
 
       // If we don't have a fun, we weren't able to build an aggregation function.
       if (!fun) {
@@ -287,7 +295,7 @@ namespace mabe {
           if (pop.GetNumOrgs() > 0) { // Only do this work if we actually have organisms!
             auto filter = BuildTraitEquation(pop.GetDataLayout(), trait_equation);
             for (auto it = pop.begin(); it != pop.end(); ++it) {
-              if (filter(*it)) out_collect.Insert(it);
+              if (!it->IsEmpty() && filter(*it)) out_collect.Insert(it);
             }
           }
           return out_collect;
