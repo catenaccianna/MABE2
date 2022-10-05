@@ -8,3 +8,5 @@
 MABE   
 # Systematics/phylogeny output
 phylo/ 
+# Common output files
+inst_set.txt
