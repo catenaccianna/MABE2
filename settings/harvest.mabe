@@ -59,6 +59,8 @@ EvalPatchHarvest patch_harvest {      // Evaluate organisms on their ability to 
   target_pop = "main_pop";            // Which population(s) should we evaluate?
   score_trait = "child_merit";    // Which trait stores path following performance?
   state_trait = "state";          // Which trait stores organisms' path follow state?
+  movement_trait = "movements";
+  map_idx_trait = "map_idx";
   map_filenames = "../settings/EvalPatchHarvest/test_map_4.txt"; 
   verbose = 0;
                                 // List of map files to load, separated by semicolons(;)
@@ -115,6 +117,7 @@ max_file.ADD_COLUMN("merit_given", "best_org.TRAIT('merit')" );
 max_file.ADD_COLUMN("gen", "best_org.TRAIT('generation')" );
 max_file.ADD_COLUMN("genome", "best_org.TRAIT('genome')" );
 max_file.ADD_COLUMN("movements", "best_org.TRAIT('movements')" );
+max_file.ADD_COLUMN("map_idx", "best_org.TRAIT('map_idx')" );
 
 @START() {
   PRINT("random_seed = ", random_seed, "\n");  // Print seed at run start.

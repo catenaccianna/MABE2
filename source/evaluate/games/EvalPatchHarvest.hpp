@@ -243,10 +243,11 @@ namespace mabe {
     using inst_func_t = VirtualCPUOrg::inst_func_t;
 
   private:
-    std::string score_trait = "score"; ///< Name of trait for organism performance
-    std::string state_trait ="state";  ///< Name of trait that stores the path follow state
-    std::string map_filenames="";      ///< ;-separated list map filenames to load.
-    std::string movement_trait="movements"; ///< ;-separated list map filenames to load.
+    std::string score_trait = "score";   ///< Name of trait for organism performance
+    std::string state_trait ="state";    ///< Name of trait that stores the path follow state
+    std::string map_filenames="";        ///< ;-separated list map filenames to load
+    std::string movement_trait="movements"; ///< Trait holding all org movements 
+    std::string map_idx_trait="map_idx"; ///< Trait holding the index of the current map
     PatchHarvestEvaluator evaluator;     /**< The evaluator that does all of the actually 
                                             computing and bookkeeping for the path follow 
                                             task */
@@ -276,6 +277,8 @@ namespace mabe {
           "List of map files to load, separated by semicolons(;)");
       LinkVar(movement_trait, "movement_trait", 
           "Which trait will store a string containing the organism's sequence of moves?");
+      LinkVar(map_idx_trait, "map_idx_trait", 
+          "Which trait will store the index of the current map?");
       LinkVar(evaluator.verbose, "verbose", 
           "If true (1), prints extra information about the organisms actions");
     }
@@ -285,6 +288,7 @@ namespace mabe {
       AddSharedTrait<double>(score_trait, "Path following score", 0.0);
       AddOwnedTrait<PatchHarvestState>(state_trait, "Organism's patch harvest state", { }); 
       AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
+      AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", { }); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
     }
@@ -296,10 +300,12 @@ namespace mabe {
       { // Move
         inst_func_t func_move = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
-            double score = evaluator.Move(hw.GetTrait<PatchHarvestState>(state_trait));
+            PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
+            double score = evaluator.Move(state);
             hw.SetTrait<double>(score_trait, score);
             hw.SetTrait<std::string>(movement_trait, 
                 hw.GetTrait<std::string>(movement_trait) + "M");
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-move", func_move);
@@ -307,9 +313,11 @@ namespace mabe {
       { // Rotate right 
         inst_func_t func_rotate_right = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
-            evaluator.RotateRight(hw.GetTrait<PatchHarvestState>(state_trait));
+            PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
+            evaluator.RotateRight(state);
             hw.SetTrait<std::string>(movement_trait, 
                 hw.GetTrait<std::string>(movement_trait) + "R");
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-rotate-r", func_rotate_right);
@@ -317,9 +325,11 @@ namespace mabe {
       { // Rotate left 
         inst_func_t func_rotate_left = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
-            evaluator.RotateLeft(hw.GetTrait<PatchHarvestState>(state_trait));
+            PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
+            evaluator.RotateLeft(state);
             hw.SetTrait<std::string>(movement_trait, 
                 hw.GetTrait<std::string>(movement_trait) + "L");
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-rotate-l", func_rotate_left);
@@ -327,10 +337,12 @@ namespace mabe {
       { // Sense 
         inst_func_t func_sense = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& inst){
-            uint32_t val = evaluator.Sense(hw.GetTrait<PatchHarvestState>(state_trait));
+            PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
+            uint32_t val = evaluator.Sense(state);
             size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
             hw.regs[reg_idx] = val;
             if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-sense", func_sense);
