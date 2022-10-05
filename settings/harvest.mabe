@@ -129,6 +129,7 @@ Var avg_gen;
   scheduler.SCHEDULE();
   PRINT("UD:", GET_UPDATE(),
         "  pop_size=", main_pop.SIZE(),
+        "  alive=", main_pop.NUM_ORGS(),
         "  merit_mean=", main_pop.CALC_MEAN("child_merit"),
         "  merit_max=", main_pop.CALC_MAX("child_merit"),
         "  gen_mean=", main_pop.CALC_MEAN("generation"),
