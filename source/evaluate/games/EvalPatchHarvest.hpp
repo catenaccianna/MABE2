@@ -87,8 +87,8 @@ namespace mabe {
 
     /// Divide raw score by the length of the current path
     double GetNormalizedScore(PatchHarvestState& state) const{
-      return static_cast<double>(state.raw_score) 
-          / map_data_vec[state.cur_map_idx].total_nutrients;
+      if(state.raw_score < 0) return 0;
+      return state.raw_score / map_data_vec[state.cur_map_idx].total_nutrients;
     }
 
     /// Load a single map for the path following task
@@ -168,6 +168,7 @@ namespace mabe {
     /// Fetch the reward value for organism's current position
     ///
     /// On a nutrient or edge nutrient: +1
+    /// On a poison: -1
     /// Else: 0
     double GetCurrentPosScore(const PatchHarvestState& state) const{
       int tile_id = state.status.Scan(GetCurPath(state).grid);
@@ -180,6 +181,7 @@ namespace mabe {
       if(!has_been_visited && (tile_id == Tile::NUTRIENT || tile_id == Tile::NUTRIENT_EDGE)){
         return 1;
       } 
+      else if(tile_id == Tile::EMPTY) return -1;
       return 0; // Otherwise we've seen this tile of the path before, do nothing
     }
 
@@ -228,6 +230,7 @@ namespace mabe {
           return 1; 
           break;
         case Tile::NUTRIENT_EDGE:
+          if(state.visited_tiles.Get(state.status.GetIndex(GetCurPath(state).grid))) return 1;
           return 0; 
           break;
       }
