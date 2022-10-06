@@ -374,6 +374,7 @@ namespace mabe {
                                             possible start patterns for the path. */
     EvalDoors_TraitNames trait_names;   /**<  Struct holding all of the trait names to keep 
                                               things tidy */
+    size_t exit_cooldown = 0; /**< How long of a cooldown to apply when exit is taken **/
     
   public:
     EvalDoors(mabe::MABE & control,
@@ -432,6 +433,8 @@ namespace mabe {
           "List of all possible start patterns for the paths. Empty for random. " 
           "Semicolons separate patterns, while commas separate door indices in each pattern. "
           "Indices start at 1 for non-exit doors.");
+      LinkVar(exit_cooldown, "exit_cooldown",
+          "How many instruction executions the org will miss after taking an exit");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
@@ -473,6 +476,7 @@ namespace mabe {
           hw.SetTrait<double>(trait_names.score_trait, score);
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
+          if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
         };
         std::stringstream sstr;
         sstr << "doors-move-" << door_idx;
