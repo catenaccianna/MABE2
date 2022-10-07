@@ -13,7 +13,6 @@ ShiftL
 ShiftR
 IfNEqu
 IfLess
-IfLabel
 MoveHeadIfNEqu
 Label
 SearchLabelDirectB
@@ -29,7 +28,6 @@ Swap
 MovHead
 JumpHead
 GetHead
-SetFlow
 Repro
 sg-move
 sg-rotate-r
