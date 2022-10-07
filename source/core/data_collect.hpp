@@ -28,10 +28,11 @@ namespace mabe {
     using Symbol_Var = emplode::Symbol_Var;
 
     // Return the value at a specified index.
-    template <typename CONTAIN_T, typename FUN_T>
-    Symbol_Var Index(const CONTAIN_T & container, FUN_T get_fun, const size_t index) {
+    template <typename CONTAIN_T, typename FUN_T, typename FUN_2_T>
+    Symbol_Var Index(const CONTAIN_T & container, FUN_T get_fun, const size_t index, FUN_2_T valid_fun) {
       if (container.size() <= index) return std::string{"nan"};
-      return get_fun( container.At(index) );
+      if (valid_fun(container.At(index))) return get_fun( container.At(index) );
+      return std::string{"nan"};
     }
 
     // Count up the number of distinct values.
@@ -63,6 +64,7 @@ namespace mabe {
           mode_val = cur_val;
         }
       }
+      if(mode_count == 0) return std::string {"nan"};
       return mode_val;
     }
 
@@ -75,12 +77,15 @@ namespace mabe {
       else if constexpr (std::is_same_v<std::string, DATA_T>) {
         min = std::string('~',22);   // '~' is ascii char 126 (last printable one.)
       }
+      size_t count = 0;
       for (const auto & entry : container) {
         if(valid_fun(entry)){
+          count++;
           const DATA_T cur_val = get_fun(entry);
           if (cur_val < min) min = cur_val;
         }
       }
+      if(count == 0) return std::string {"nan"};
       return min;
     }
 
@@ -90,12 +95,15 @@ namespace mabe {
       if constexpr (std::is_arithmetic_v<DATA_T>) {
         max = std::numeric_limits<DATA_T>::lowest();
       }
+      size_t count = 0;
       for (const auto & entry : container) {
         if(valid_fun(entry)){
+          count++;
           const DATA_T cur_val = get_fun(entry);
           if (cur_val > max) max = cur_val;
         }
       }
+      if(count == 0) return std::string {"nan"};
       return max;
     }
 
@@ -110,14 +118,16 @@ namespace mabe {
       }
       size_t id = 0;
       size_t min_id = 0;
+      size_t count = 0;
       for (const auto & entry : container) {
         if(valid_fun(entry)){
+          count++;
           const DATA_T cur_val = get_fun(entry);
           if (cur_val < min_val) { min_val = cur_val; min_id = id; }
         }
         ++id;
-
       }
+      if(count == 0) return std::string {"nan"};
       return min_id;
     }
 
@@ -129,13 +139,16 @@ namespace mabe {
       }
       size_t id = 0;
       size_t max_id = 0;
+      size_t count = 0;
       for (const auto & entry : container) {
         if(valid_fun(entry)){
+          count++;
           const DATA_T cur_val = get_fun(entry);
           if (cur_val > max_val) { max_val = cur_val; max_id = id; }
         }
         ++id;
       }
+      if(count == 0) return std::string {"nan"};
       return max_id;
     }
 
@@ -150,6 +163,7 @@ namespace mabe {
             count++;
           }
         }
+        if(count == 0) return std::string {"nan"};
         return total / count;
       }
       return std::string{"nan"};
@@ -164,6 +178,7 @@ namespace mabe {
           values[count++] = get_fun(entry);
         }
       }
+      if(count == 0) return std::string {"nan"};
       emp::Sort(values);
       return values[count/2];
     }
@@ -172,12 +187,14 @@ namespace mabe {
     Symbol_Var Variance(const CONTAIN_T & container, FUN_T get_fun, FUN_2_T valid_fun) {
       if constexpr (std::is_arithmetic_v<DATA_T>) {
         double total = 0.0;
-        const double N = (double) container.size();
+        double N = 0.0;
         for (const auto & entry : container) {
           if(valid_fun(entry)){
             total += (double) get_fun(entry);
+            N += 1;
           }
         }
+        if(N == 0) return std::string {"nan"};
         double mean = total / N;
         double var_total = 0.0;
         for (const auto & entry : container) {
@@ -196,12 +213,13 @@ namespace mabe {
     Symbol_Var StandardDeviation(const CONTAIN_T & container, FUN_T get_fun, FUN_2_T valid_fun) {
       if constexpr (std::is_arithmetic_v<DATA_T>) {
         double total = 0.0;
-        const double N = (double) container.size();
+        double N = 0.0;
         for (const auto & entry : container) {
           if(valid_fun(entry)){
             total += (double) get_fun(entry);
           }
         }
+        if(N == 0) return std::string {"nan"};
         double mean = total / N;
         double var_total = 0.0;
         for (const auto & entry : container) {
@@ -233,11 +251,14 @@ namespace mabe {
     template <typename DATA_T, typename CONTAIN_T, typename FUN_T, typename FUN_2_T>
     Symbol_Var Entropy(const CONTAIN_T & container, FUN_T get_fun, FUN_2_T valid_fun) {
       std::map<DATA_T, size_t> vals;
+      size_t count = 0;
       for (const auto & entry : container) {
         if(valid_fun(entry)){
+          count += 1;
           vals[ get_fun(entry) ]++;
         }
       }
+      if(count == 0) return std::string {"nan"};
       const size_t N = container.size();
       double entropy = 0.0;
       for (auto [entry, count] : vals) {
@@ -258,8 +279,8 @@ namespace mabe {
     // Return the index if a simple number was provided.
     if (emp::is_digits(action)) {
       size_t index = emp::from_string<size_t>(action);
-      return [get_fun,index](const CONTAIN_T & container) {
-        return DataCollect::Index<CONTAIN_T>(container, get_fun, index);
+      return [get_fun,index,valid_fun](const CONTAIN_T & container) {
+        return DataCollect::Index<CONTAIN_T>(container, get_fun, index, valid_fun);
       };
     }
 

@@ -182,6 +182,10 @@ namespace mabe {
                                                    execute instruction.*/
       int max_speculative_insts = -1;         /**< Maximum number of insts. to speculatively 
                                                   execute. -1 for genome length. */
+      std::string num_insts_executed_name = "insts_executed"; /**< Trait name for the number
+                                                                    of instructions 
+                                                                    executed */
+      
       // Internal use
       /// Distribution of number of point mutations to occur.
       emp::CombinedBinomialDistribution site_point_mut_dist; 
@@ -470,6 +474,8 @@ namespace mabe {
           "Organism's generation", 0);
       GetManager().AddOwnedTrait<size_t>(SharedData().genome_length_name, 
           "Length of organism's genome", 0);
+      GetManager().AddOwnedTrait<size_t>(SharedData().num_insts_executed_name, 
+          "Number of instructions executed.", 0);
       SetupInstLib();
       if(!SharedData().inst_set_output_filename.empty()){
         WriteInstructionSetFile(SharedData().inst_set_output_filename);
@@ -625,6 +631,7 @@ namespace mabe {
         }
         Process(1, SharedData().verbose);
       }
+      SetTrait<size_t>(SharedData().num_insts_executed_name, num_insts_executed);
       return true;
     }
 
