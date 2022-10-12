@@ -8,3 +8,5 @@
 MABE   
 # Systematics/phylogeny output
 phylo/ 
+# Instruction set output
+inst_set.txt

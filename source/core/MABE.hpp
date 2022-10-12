@@ -724,6 +724,7 @@ namespace mabe {
                            bool do_mutations) {
     emp_assert(org.IsEmpty() == false);             // Empty cells cannot reproduce.
     before_repro_sig.Trigger(ppos);                 // Signal reproduction event.
+    config_script.Trigger("BEFORE_REPRO");          // Trigger any updated-based events
     OrgPosition pos;                                // Position of each offspring placed.
     emp::Ptr<Organism> new_org;
     Collection birth_list;                          // Track positions of all offspring.
@@ -752,6 +753,7 @@ namespace mabe {
     emp_assert(target_pos.IsValid());    // Target positions must already be valid.
 
     before_repro_sig.Trigger(ppos);
+    config_script.Trigger("BEFORE_REPRO");  // Trigger any updated-based events
     emp::Ptr<Organism> new_org = do_mutations ? org.MakeOffspringOrganism(random) : org.CloneOrganism();
     on_offspring_ready_sig.Trigger(*new_org, ppos, target_pos.Pop());
 
