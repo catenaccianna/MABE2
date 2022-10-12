@@ -51,12 +51,12 @@ namespace mabe {
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] + hw.regs[idx_op_2];
         // Advance IP beyond nops
-        if(inst.nop_vec.size() <= 3) hw.AdvanceIP(inst.nop_vec.size());
-        else hw.AdvanceIP(3);
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination, computation is always B + C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = hw.regs[1] + hw.regs[2];
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_Sub(org_t& hw, const org_t::inst_t& inst){
@@ -67,12 +67,12 @@ namespace mabe {
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] - hw.regs[idx_op_2];
         // Advance IP beyond nops
-        if(inst.nop_vec.size() <= 3) hw.AdvanceIP(inst.nop_vec.size());
-        else hw.AdvanceIP(3);
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B - C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = hw.regs[1] - hw.regs[2];
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_Nand(org_t& hw, const org_t::inst_t& inst){
@@ -83,12 +83,12 @@ namespace mabe {
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = ~(hw.regs[idx_op_1] & hw.regs[idx_op_2]);
         // Advance IP beyond nops
-        if(inst.nop_vec.size() <= 3) hw.AdvanceIP(inst.nop_vec.size());
-        else hw.AdvanceIP(3);
+        hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B NAND C
         size_t idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
         hw.regs[idx] = ~(hw.regs[1] & hw.regs[2]);
+        if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
       }
     }
     void Inst_ShiftL(org_t& hw, const org_t::inst_t& inst){
