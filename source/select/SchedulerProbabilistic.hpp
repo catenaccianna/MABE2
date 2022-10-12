@@ -26,6 +26,14 @@ namespace mabe {
     emp::UnorderedIndexMap weight_map; ///< Data structure storing all organism fitnesses
     double base_value = 1; ///< Fitness value that all organisms start with 
     double merit_scale_factor = 1; ///< Fitness = base_value + (merit * this value)
+    int death_age = -1; /**< Organisms that execute death_age * genome length instructions die
+                                -1 for no death from old age */
+    std::string insts_executed_trait = "insts_executed"; /**< Name of the trait storing the 
+                                                              number of instructions the 
+                                                              organism has executed. **/
+    std::string genome_length_trait = "genome_length"; /**< Name of the trait storing the 
+                                                              length of the org's genome **/
+  
   public:
     SchedulerProbabilistic(mabe::MABE & control,
                      const std::string & name="SchedulerProbabilistic",
@@ -49,12 +57,19 @@ namespace mabe {
       LinkVar(base_value, "base_value", "What value should the scheduler use for organisms"
           " that have performed no tasks?");
       LinkVar(merit_scale_factor, "merit_scale_factor", "How should the scheduler scale merit?");
+      LinkVar(death_age, "death_age", 
+          "Organisms die from old age after executing death_age * genome length instructions."
+          " -1 for no death from old age");
+      LinkVar(insts_executed_trait, "insts_executed_trait", 
+          "The number of instructions this organism has executed");
     }
 
     /// Register traits
     void SetupModule() override {
       AddRequiredTrait<double>(trait); ///< The fitness trait must be set by another module.
       AddOwnedTrait<bool>(reset_self_trait, "Does org need reset?", false); ///< Allow organisms to reset themselves 
+      AddRequiredTrait<size_t>(insts_executed_trait); ///< Number of instructions executed
+      AddRequiredTrait<size_t>(genome_length_trait); ///< Length of org's genome 
     }
     
     /// Run organisms in a population a certain number of updates or until one reproduces
@@ -96,7 +111,6 @@ namespace mabe {
       const size_t N = pop.GetSize();
       // Make sure the population isn't empty
       if (pop.GetNumOrgs() == 0) {
-        emp::notify::Error("Trying to schedule an empty population.");
         return 0;
       }
 
@@ -105,11 +119,23 @@ namespace mabe {
       // Dole out updates
       for(size_t i = 0; i < N * avg_updates; ++i){
         const double total_weight = weight_map.GetWeight();
+        if (pop.GetNumOrgs() == 0) {
+          return 0;
+        }
         if(total_weight > 0.0){ // TODO: cap to max weight
           selected_idx = weight_map.Index(random.GetDouble() * total_weight);
         }
         else selected_idx = random.GetUInt(pop.GetSize()); // No weights -> pick randomly 
         pop[selected_idx].ProcessStep();
+        if(death_age >= 0){
+          const size_t num_insts_executed = 
+              pop[selected_idx].GetTrait<size_t>(insts_executed_trait);
+          const size_t genome_length = 
+              pop[selected_idx].GetTrait<size_t>(genome_length_trait);
+          if(num_insts_executed >= death_age * genome_length){
+            control.ClearOrgAt({pop, selected_idx});
+          }
+        }
       }
       return weight_map.GetWeight();
     }
@@ -119,12 +145,25 @@ namespace mabe {
       Population & pop = placement_pos.Pop();
       const size_t N = pop.GetSize();
       if(weight_map.GetSize() < N){
-        weight_map.Resize(N, 1);
+        weight_map.Resize(N, 0);
       }
       size_t org_idx = placement_pos.Pos();
-      weight_map.Adjust(org_idx, 
-          base_value + merit_scale_factor * placement_pos.Pop()[org_idx].GetTrait<double>(trait));
-      placement_pos.Pop()[org_idx].SetTrait<bool>(reset_self_trait, false);
+      if(pop[org_idx].IsEmpty()){
+        weight_map.Adjust(org_idx, 0);
+      }
+      else{
+        weight_map.Adjust(org_idx, 
+            base_value + merit_scale_factor 
+                * placement_pos.Pop()[org_idx].GetTrait<double>(trait));
+        placement_pos.Pop()[org_idx].SetTrait<bool>(reset_self_trait, false);
+      }
+    }
+
+    /// When an organism dies, set its weight to zero
+    void BeforeDeath(OrgPosition death_pos) override{
+        size_t org_idx = death_pos.Pos();
+        emp_assert(org_idx < weight_map.GetSize());
+        weight_map.Adjust(org_idx, 0);
     }
   };
 

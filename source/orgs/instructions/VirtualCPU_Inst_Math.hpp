@@ -50,6 +50,7 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] + hw.regs[idx_op_2];
+        // Advance IP beyond nops
         hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination, computation is always B + C
@@ -65,6 +66,7 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = hw.regs[idx_op_1] - hw.regs[idx_op_2];
+        // Advance IP beyond nops
         hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B - C
@@ -80,6 +82,7 @@ namespace mabe {
         size_t idx_op_2 = 
             inst.nop_vec.size() < 3 ? hw.GetComplementNop(idx_op_1) : inst.nop_vec[2];
         hw.regs[idx_res] = ~(hw.regs[idx_op_1] & hw.regs[idx_op_2]);
+        // Advance IP beyond nops
         hw.AdvanceIP(inst.nop_vec.size() <= 3 ? inst.nop_vec.size() : 3);
       }
       else{ // Nop determines destination. Computation is always B NAND C

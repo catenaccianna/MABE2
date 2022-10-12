@@ -96,12 +96,17 @@ namespace mabe {
     void Inst_JumpHead(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
         hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
-        size_t jump_dist = hw.regs[1];
+        size_t jump_dist = hw.regs[2;
         if(inst.nop_vec.size() >= 2) jump_dist = hw.regs[inst.nop_vec[1]];
         if(!inst.nop_vec.empty()){
           hw.AdvanceModdedHead(inst.nop_vec[0], jump_dist);
         }
         else hw.AdvanceIP(jump_dist);
+        // If we moved the instruction pointer, drag it back one to account for auto advance
+        if(inst.nop_vec.size() == 0 || inst.nop_vec[0] == 0){
+          if(hw.inst_ptr == 0) hw.inst_ptr = hw.genome_working.size() -1;
+          else hw.inst_ptr -= 1;
+        }
       }
       else{
         if(!inst.nop_vec.empty()){
