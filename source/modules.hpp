@@ -59,3 +59,4 @@
 #include "orgs/instructions/VirtualCPU_Inst_Label.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Manipulation.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Replication.hpp"
+#include "orgs/instructions/VirtualCPU_Inst_Dictionary.hpp"

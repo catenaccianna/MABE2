@@ -47,6 +47,11 @@ VirtualCPU_Inst_Replication inst_lib_repl { // Replication instructions for Virt
                                   // instructions do nothing. 
                                   // Overruled by `req_count_inst_executed`
 };
+VirtualCPU_Inst_Dictionary inst_lib_dict { // Manipulation instructions for VirtualCPUOrg
+  target_pop = "main_pop";      // Population(s) to manage.
+  dictionary_trait_name = "dictionary"; // Name of the trait that stores
+                                        // the organism's dictionary
+};
 EvalDoors eval_doors {      // Evaluate organisms on their ability to follow a path.
   target_pop = "main_pop";  // Which population(s) should we evaluate?
   score_trait = "child_merit";  // Which trait stores path following performance?
