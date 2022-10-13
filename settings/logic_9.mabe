@@ -159,9 +159,12 @@ EvalTaskEqu task_equ {          // Organism-triggered evaluation of EQU operatio
                                 //  pow: Power. New merit = old merit * (2 ^ reward)
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
-  point_mut_prob = 0.05;              // Probability of each instruction mutating on reproduction.
-  insertion_mut_prob = 0.01;              // Probability of each instruction mutating on reproduction.
-  deletion_mut_prob = 0.01;              // Probability of each instruction mutating on reproduction.
+  site_point_mut_prob = 0.0075; // Per-site probability of a point mutations
+  site_insertion_mut_prob = 0;  // Per-site probability of a insertion mutations
+  site_deletion_mut_prob = 0;   // Per-site probability of a deletion mutations
+  genome_point_mut_prob = 0;        // Per-genome probability of a point mutations
+  genome_insertion_mut_prob = 0.05; // Per-genome probability of a insertion mutations
+  genome_deletion_mut_prob = 0.05;  // Per-genome probability of a deletion mutations
   N = 0;                        // Initial number of instructions in genome
   init_random = 0;              // Should we randomize ancestor?  (0 = "blank" default)
   eval_time = 200;              // How many CPU cycles should we give organisms to run?

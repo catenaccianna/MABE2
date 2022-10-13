@@ -74,9 +74,12 @@ EvalDoors eval_doors {      // Evaluate organisms on their ability to follow a p
   exit_cooldown = 0; // How many instruction executions the org will miss after taking an exit
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
-  point_mut_prob = 0.01;        // Per-site probability of a point mutations
-  insertion_mut_prob = 0.01;        // Per-site probability of a insertion mutations
-  deletion_mut_prob = 0.01;        // Per-site probability of a deletion mutations
+  site_point_mut_prob = 0.01; // Per-site probability of a point mutations
+  site_insertion_mut_prob = 0;  // Per-site probability of a insertion mutations
+  site_deletion_mut_prob = 0;   // Per-site probability of a deletion mutations
+  genome_point_mut_prob = 0;        // Per-genome probability of a point mutations
+  genome_insertion_mut_prob = 0.05; // Per-genome probability of a insertion mutations
+  genome_deletion_mut_prob = 0.05;  // Per-genome probability of a deletion mutations
   N = 0;                        // Initial number of instructions in genome
   init_random = 0;              // Should we randomize ancestor?  (0 = "blank" default)
   eval_time = 200;              // How many CPU cycles should we give organisms to run?

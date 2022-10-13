@@ -96,7 +96,7 @@ namespace mabe {
     void Inst_JumpHead(org_t& hw, const org_t::inst_t& inst){
       if(hw.expanded_nop_args){
         hw.AdvanceIP(inst.nop_vec.size() <= 2 ? inst.nop_vec.size() : 2);
-        size_t jump_dist = hw.regs[2;
+        size_t jump_dist = hw.regs[2];
         if(inst.nop_vec.size() >= 2) jump_dist = hw.regs[inst.nop_vec[1]];
         if(!inst.nop_vec.empty()){
           hw.AdvanceModdedHead(inst.nop_vec[0], jump_dist);
