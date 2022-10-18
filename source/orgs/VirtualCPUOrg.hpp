@@ -116,6 +116,7 @@ namespace mabe {
     }
     size_t Mutate_Genome_Generic(
         std::function<void(size_t, emp::Random&)> mut_func, double prob, emp::Random& random){
+      if(prob <= 0) return 0; // Avoid rng call
       if(!random.P(prob)) return 0;
       const size_t pos = random.GetUInt(GetGenomeSize());
       mut_func(pos, random);
