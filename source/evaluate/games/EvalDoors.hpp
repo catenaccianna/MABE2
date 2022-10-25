@@ -473,7 +473,7 @@ namespace mabe {
         inst_func_t func_move = [this, door_idx](org_t& hw, const org_t::inst_t& /*inst*/){
           DoorsState& state = hw.GetTrait<DoorsState>(trait_names.state_trait);
           double score = evaluator.Move(state, door_idx);
-          hw.SetTrait<double>(trait_names.score_trait, score);
+          hw.SetTrait<double>(trait_names.score_trait, emp::Pow2(score));
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
