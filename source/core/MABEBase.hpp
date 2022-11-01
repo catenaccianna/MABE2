@@ -184,8 +184,8 @@ namespace mabe {
     }
 
     // Interface function for MABEScript
-    virtual size_t GetRandomSeed() const = 0;
-    virtual void SetRandomSeed(size_t in_seed) = 0;
+    virtual uint64_t GetRandomSeed() const = 0;
+    virtual void SetRandomSeed(int64_t in_seed) = 0;
     virtual Population & AddPopulation(const std::string & name, size_t pop_size=0) = 0;
     virtual void CopyPop(const Population & from_pop, Population & to_pop) = 0;
     virtual void MoveOrgs(Population & from_pop, Population & to_pop, bool reset_to) = 0;
