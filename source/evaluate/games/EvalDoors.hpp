@@ -63,8 +63,7 @@ namespace mabe {
     using data_t = uint32_t;
 
     bool initialized = false;     ///< Flag indicating if this state has been initialized
-    emp::vector<data_t> prev_room_vec;   ///< Vector of cues from rooms previously visited
-    emp::vector<data_t> door_choice_vec; ///< Vector of the doors the org has chosen
+    size_t last_room_cue;         ///< Cue of the last "door room" 
     double score = 0;             ///< Summarized score of the organism 
     emp::vector<data_t> cue_vec;  ///< Vector containing the value of each cue (random or not)
     data_t current_cue;           ///< Cue of the current room the organism is in
@@ -126,14 +125,10 @@ namespace mabe {
     /// Move the organism through the "exit" door, going back one room  
     double TakeExit(DoorsState& state){
       if(!state.initialized) InitializeState(state);
-      // Update bookkeeping
-      state.prev_room_vec.push_back(state.current_cue);
-      state.door_choice_vec.push_back(state.cue_vec[exit_cue_idx]);
       // Update score vars and current cue
-      if(state.prev_room_vec.size() > 1 && state.current_cue == state.cue_vec[exit_cue_idx]){
+      if(state.current_cue == state.cue_vec[exit_cue_idx]){
         state.correct_exits_taken++;
-        state.current_cue = *(state.prev_room_vec.rbegin() + 1); // Return to previous room
-        state.prev_room_vec.pop_back();
+        state.current_cue = state.last_room_cue; // Return to previous room
         state.doors_correct_vec[exit_cue_idx]++;
       }
       else{
@@ -331,15 +326,13 @@ namespace mabe {
         state.path_start_pattern_tracker++;
         state.correct_doors_taken++;
         state.doors_correct_vec[door_idx]++;
-        state.prev_room_vec.push_back(state.current_cue);
-        state.door_choice_vec.push_back(state.cue_vec[door_idx]);
+        state.last_room_cue = state.current_cue;
         state.current_cue = GetNextCue(state);
       }
       // Wrong door -> Penalize and move into "wrong" room
       else{
         state.incorrect_doors_taken++;
-        state.prev_room_vec.push_back(state.current_cue);
-        state.door_choice_vec.push_back(state.cue_vec[door_idx]);
+        state.last_room_cue = state.current_cue;
         state.current_cue = state.cue_vec[exit_cue_idx];
       }
       return UpdateScore(state);
@@ -473,7 +466,7 @@ namespace mabe {
         inst_func_t func_move = [this, door_idx](org_t& hw, const org_t::inst_t& /*inst*/){
           DoorsState& state = hw.GetTrait<DoorsState>(trait_names.state_trait);
           double score = evaluator.Move(state, door_idx);
-          hw.SetTrait<double>(trait_names.score_trait, emp::Pow2(score));
+          hw.SetTrait<double>(trait_names.score_trait, std::pow(2, score));
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
