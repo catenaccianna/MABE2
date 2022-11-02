@@ -12,6 +12,7 @@ CXX_native := g++
 OFLAGS_native_opt := -O3 -DNDEBUG
 OFLAGS_native_debug := -g -pedantic -DEMP_TRACK_MEM  -Wnon-virtual-dtor -Wcast-align
 OFLAGS_native_grumpy := -g -pedantic -DEMP_TRACK_MEM  -Wnon-virtual-dtor -Wcast-align -Wconversion -Weffc++
+OFLAGS_native_symbols := -Og -g -DNDEBUG
 
 OFLAGS_web_opt := -Os -DNDEBUG -s TOTAL_MEMORY=67108864
 OFLAGS_web_debug := -g4 -pedantic -Wno-dollar-in-identifier-extension -s TOTAL_MEMORY=67108864 -s ASSERTIONS=2 -s DEMANGLE_SUPPORT=1 # -s SAFE_HEAP=1
@@ -20,6 +21,7 @@ CFLAGS_native_opt := $(CFLAGS_all) $(OFLAGS_native_opt)
 CFLAGS_native_noblock := $(CFLAGS_all) $(OFLAGS_native_opt) -DEMP_NO_BLOCK
 CFLAGS_native_debug := $(CFLAGS_all) $(OFLAGS_native_debug)
 CFLAGS_native_grumpy := $(CFLAGS_all) $(OFLAGS_native_grumpy)
+CFLAGS_native_symbols := $(CFLAGS_all) $(OFLAGS_native_symbols)
 
 CFLAGS_web_debug := $(CFLAGS_all) $(OFLAGS_web_debug) --js-library $(EMP_DIR)/web/library_emp.js -s EXPORTED_FUNCTIONS="['_main', '_empCppCallback']" -s NO_EXIT_RUNTIME=1
 CFLAGS_web_opt := $(CFLAGS_all) $(OFLAGS_web_opt) --js-library $(EMP_DIR)/web/library_emp.js -s EXPORTED_FUNCTIONS="['_main', '_empCppCallback']" -s NO_EXIT_RUNTIME=1
@@ -35,6 +37,9 @@ CFLAGS := $(CFLAGS_native_opt)
 
 debug: CFLAGS := $(CFLAGS_native_debug)
 debug: all
+
+symbols: CFLAGS := $(CFLAGS_native_symbols)
+symbols: all
 
 profile: CFLAGS := $(CFLAGS_native_opt) -pg
 profile: all
