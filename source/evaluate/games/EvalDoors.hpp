@@ -368,6 +368,7 @@ namespace mabe {
     EvalDoors_TraitNames trait_names;   /**<  Struct holding all of the trait names to keep 
                                               things tidy */
     size_t exit_cooldown = 0; /**< How long of a cooldown to apply when exit is taken **/
+    double score_exp_base = 2; /**< Merit is this value raised to the "score" power **/
     
   public:
     EvalDoors(mabe::MABE & control,
@@ -428,6 +429,8 @@ namespace mabe {
           "Indices start at 1 for non-exit doors.");
       LinkVar(exit_cooldown, "exit_cooldown",
           "How many instruction executions the org will miss after taking an exit");
+      LinkVar(score_exp_base, "score_exp_base",
+          "Merit is equal to score_exp_base^(org's score)");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
@@ -466,7 +469,7 @@ namespace mabe {
         inst_func_t func_move = [this, door_idx](org_t& hw, const org_t::inst_t& /*inst*/){
           DoorsState& state = hw.GetTrait<DoorsState>(trait_names.state_trait);
           double score = evaluator.Move(state, door_idx);
-          hw.SetTrait<double>(trait_names.score_trait, std::pow(2, score));
+          hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
