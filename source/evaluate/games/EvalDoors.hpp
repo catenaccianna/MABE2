@@ -301,6 +301,7 @@ namespace mabe {
       }
       // Set the initial cue
       state.current_cue = GetNextCue(state);
+      state.last_room_cue = state.current_cue;
     }
     
     /// Move the organism through its chosen door
@@ -326,8 +327,8 @@ namespace mabe {
         state.path_start_pattern_tracker++;
         state.correct_doors_taken++;
         state.doors_correct_vec[door_idx]++;
-        state.last_room_cue = state.current_cue;
         state.current_cue = GetNextCue(state);
+        state.last_room_cue = state.current_cue;
       }
       // Wrong door -> Penalize and move into "wrong" room
       else{
