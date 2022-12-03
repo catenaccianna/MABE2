@@ -61,14 +61,20 @@ namespace mabe {
     ~AnalyzePangenome() {  }
 
     // Setup member functions associated with this class.
-    static void InitType(emplode::TypeInfo & info) {    }
+    static void InitType(emplode::TypeInfo & info) {
+      info.AddMemberFunction("PANGENOME_CROSSOVER",
+                             [](AnalyzePangenome & mod, Collection list) { return mod.Crossover(list); },
+                             "Mutate organisms using DeBruijn Graph pangenome crossover module.");
+    }
 
     void SetupConfig() override {
+      std::cout<< " setup config ";
       LinkVar(probability, "probability", "Probability that the genome of an organism is modified with the DBGraph before it mutates.");
       LinkVar(count_kmers, "count_kmers", "If true, a kmer in the DBGraph can only be used the same number of times it appears in the pangenome.");
     }
 
     void SetupModule() override {
+      std::cout<< " setup mod ";
       data = emp::DataFile("DeBruijnGraph.csv");
 
       std::function<size_t ()> updatefun = [this](){return control.GetUpdate();};
@@ -120,6 +126,9 @@ namespace mabe {
     }
 
     void BeforeMutate(Organism & bit_org) override {
+      std::cout<< " mutate ";
+      bit_org.GenerateOutput();
+      std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
       // modify the organism & do the actual crossover
       string new_genome;
       if(count_kmers){
@@ -129,6 +138,30 @@ namespace mabe {
         new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
       }
       bit_org.GenomeFromString(new_genome); //pass in organism reference and change its genome
+      bit_org.GenerateOutput();
+      std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
+    }
+
+    bool Crossover(Collection & orgs) {
+      string new_genome;
+      for (Organism & bit_org : orgs) {
+        /**                                      // initial fitness & genome
+        std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
+        std::cout << bit_org.ToString()<<std::endl;
+        */
+        if(count_kmers){                        //call DeBruijnGraph modification
+          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability);
+        }
+        else{ // (just a couple different ways of using DBGraph)
+          new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
+        }
+        bit_org.GenomeFromString(new_genome); //change organism's genome to new string
+        /**                                   //fitness value post-DBGraph modification
+        std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
+        std::cout << bit_org.ToString()<<std::endl;
+        */
+      }
+      return true; // @note selectTournament returns collection, evalNK returns double, what do i return??
     }
 
     void BeforeDeath(OrgPosition position) override {

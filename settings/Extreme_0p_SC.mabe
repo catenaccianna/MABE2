@@ -14,19 +14,19 @@ BitsOrg bits_org {
 
 EvalNK eval_nk {                // Evaluate bitstrings on an NK fitness lanscape.
   N = num_bits;                 // Number of bits required in output
-  K = 3;                        // Number of bits used in each gene (k-mer)
+  K = 0;                        // Number of bits used in each gene (k-mer)
   bits_trait = "bits";          // Which trait stores the bit sequence to evaluate?
   fitness_trait = "fitness";    // Which trait should we store NK fitness in?
 };
 
 SelectTournament my_selector {
-  tournament_size = 2;       // Number of orgs in each tournament
+  tournament_size = 10;       // Number of orgs in each tournament
   fitness_fun = "fitness";   // Which trait provides the fitness value?
 };
 
 AnalyzePangenome pangenome {
-    probability = 1;        // Every organism's genome will be modified every time before mutation by the DeBruijn graph.
-    count_kmers = 1;        // Kmers can only be used (at maximum) the number of times they appear in the living pangenome.
+    probability = 0;     // Probability that an organism's genome will be modified before mutation by the DeBruijn graph is 1%.
+    count_kmers = 1;        // Kmers can be used infinitely by DeBruijn graph in generating new genomes.
 };
 
 DataFile fit_file { filename="fitness.csv"; };
