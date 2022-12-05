@@ -273,13 +273,13 @@ namespace mabe {
     /// Rotate the organism clockwise by 90 degrees
     void RotateRight(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
-      state.status.Rotate(2);
+      state.status.Rotate(1);
     }
 
     /// Rotate the organism counterclockwise by 90 degrees
     void RotateLeft(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
-      state.status.Rotate(-2);
+      state.status.Rotate(-1);
     }
 
     /// Fetch the cue value of the tile the organism is currently on

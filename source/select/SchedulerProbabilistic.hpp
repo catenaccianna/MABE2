@@ -152,9 +152,11 @@ namespace mabe {
         weight_map.Adjust(org_idx, 0);
       }
       else{
-        weight_map.Adjust(org_idx, 
-            base_value + merit_scale_factor 
-                * placement_pos.Pop()[org_idx].GetTrait<double>(trait));
+        const double trait_val = placement_pos.Pop()[org_idx].GetTrait<double>(trait);
+        const double full_val = base_value + (trait_val * merit_scale_factor);
+        // Truncate negatives
+        if(full_val <= 0.0) weight_map.Adjust(org_idx, 0.0);
+        else weight_map.Adjust(org_idx, full_val);
         placement_pos.Pop()[org_idx].SetTrait<bool>(reset_self_trait, false);
       }
     }
