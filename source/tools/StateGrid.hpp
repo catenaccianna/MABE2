@@ -21,6 +21,7 @@
 #define EMP_EVO_STATE_GRID_H
 
 #include <map>
+#include <unordered_map>
 #include <string>
 
 #include "emp/base/assert.hpp"
@@ -30,6 +31,7 @@
 
 #include "emp/bits/BitVector.hpp"
 #include "emp/datastructs/map_utils.hpp"
+#include "emp/data/Datum.hpp"
 #include "emp/io/File.hpp"
 #include "emp/math/math.hpp"
 #include "emp/math/Random.hpp"
@@ -113,6 +115,38 @@ namespace emp {
                                    If true, the grid is toroidal and agents that wander off 
                                       one side wrap to the opposite side.
                                    If false, agents are clamped to the grid. */
+    std::unordered_map<std::string, emp::Datum> metadata; ///< Map of name->data for metadata
+    unsigned char comment_char = '#';            ///< Character preceding a comment line
+    unsigned char metadata_prefix_char = '$';    ///< Character preceding a metadata line
+    unsigned char metadata_separator_char = ';'; ///< Char that splits two metadata statements
+    unsigned char metadata_assign_char = '=';    ///< Char that assigns a value to a key
+                                                     
+    /// Parse a single line of metadata
+    ///
+    /// Metadata lines start with a given character ($ by deafult).
+    /// Key value pairs take the from key1=val2;key2=val2... but characters can be changed
+    void ParseMetadata(std::string line_str){
+      line_str.erase(0, 1); // Remove prefix char
+      // Remove extra separator if needed
+      if(line_str[line_str.size() - 1] == metadata_separator_char){ 
+        line_str.erase(line_str.size() - 1, 1);
+      }
+      emp::vector<std::string> pair_vec; 
+      emp::slice(line_str,  pair_vec, metadata_separator_char); 
+      for(std::string pair : pair_vec){
+        emp::vector<std::string> parts_vec;
+        emp::slice(pair, parts_vec, metadata_assign_char);
+        if(parts_vec.size() != 2){
+          emp_error("Error! Invalid StateGrid metadata pair! ", pair); 
+        }
+        std::string key = parts_vec[0];
+        emp::justify(key);
+        std::string value = parts_vec[1];
+        emp::justify(value);
+        metadata[key] = emp::Datum(value);
+        std::cout << "Found metadata: " << key << " -> " << value << std::endl;
+      }
+    }
 
   public:
     StateGrid() : width(0), height(0), states(0), info(), is_toroidal(false) { ; }
@@ -134,6 +168,20 @@ namespace emp {
     size_t GetSize() const { return states.size(); }
     const emp::vector<int> GetStates() const { return states; }
     const StateGridInfo & GetInfo() const { return info; }
+    unsigned char GetCommentChar() const { return comment_char; }
+    unsigned char GetMetadataPrefixChar() const { return metadata_prefix_char; }
+    unsigned char GetMetadataSepraratorChar() const { return metadata_separator_char; }
+    unsigned char GetMetadataAssignChar() const { return metadata_assign_char; }
+    void SetCommentChar(unsigned char c)  { comment_char = c; }
+    void SetMetadataPrefixChar(unsigned char c)  { metadata_prefix_char = c; }
+    void SetMetadataSepraratorChar(unsigned char c)  { metadata_separator_char = c; }
+    void SetMetadataAssignChar(unsigned char c)  { metadata_assign_char = c; }
+    bool HasMetadata(const std::string& s) { return metadata.find(s) != metadata.end(); }
+    emp::Datum& GetMetadata(const std::string& s) { 
+      emp_assert(HasMetadata(s));
+      return metadata[s]; 
+    }
+
 
     int & operator()(size_t x, size_t y) {
       emp_assert(x < width, x, width);
@@ -196,13 +244,23 @@ namespace emp {
       file.RemoveWhitespace();
       file.RemoveEmpty();
       if(file.GetNumLines() == 0){
-        emp_error("Error! StateGrid attempting to load file that empty or missing!"); 
+        emp_error("Error! StateGrid attempting to load file that is empty or missing!"); 
+      }
+      // Preamble (all comment and metadata lines at the top of the file) 
+      size_t num_preamble_lines = 0;
+      for(size_t line_idx = 0; line_idx < file.GetNumLines(); ++line_idx){
+        if(file[line_idx][0] != metadata_prefix_char && file[line_idx][0] != comment_char){
+          break;
+        }
+        num_preamble_lines++;
+        // Parse metadata
+        if(file[line_idx][0] == metadata_prefix_char) ParseMetadata(file[line_idx]);
       }
 
       // Determine the size of the new grid.
-      height = file.GetNumLines();
+      height = file.GetNumLines() - num_preamble_lines;
       emp_assert(height > 0);
-      width = file[0].size();
+      width = file[num_preamble_lines].size();
       emp_assert(width > 0);
 
       // Now that we have the new size, resize the state grid.
@@ -210,10 +268,11 @@ namespace emp {
       states.resize(size);
 
       // Load in the specific states.
-      for (size_t row = 0; row < height; row++) {
-        emp_assert(file[row].size() == width);  // Make sure all rows are the same size.
+      for (size_t row = 0; row < file.GetNumLines() - num_preamble_lines; row++) {
+        // Make sure all rows are the same size.
+        emp_assert(file[row + num_preamble_lines].size() == width);  
         for (size_t col = 0; col < width; col++) {
-          states[row*width+col] = info.GetState(file[row][col]);
+          states[row*width+col] = info.GetState(file[row + num_preamble_lines][col]);
         }
       }
 

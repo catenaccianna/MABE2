@@ -257,9 +257,9 @@ namespace mabe {
     void Initialize() {
       // Setup main MABE variables.
       auto & root_scope = GetSymbolTable().GetRootScope();
-      root_scope.LinkFuns<int>("random_seed",
+      root_scope.LinkFuns<int64_t>("random_seed",
                               [this](){ return control.GetRandomSeed(); },
-                              [this](int seed){ control.SetRandomSeed(seed); },
+                              [this](int64_t seed){ control.SetRandomSeed(seed); },
                               "Seed for random number generator; use 0 to base on time.");
 
       // Setup "Population" as a type in the config file.

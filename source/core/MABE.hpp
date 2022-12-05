@@ -131,8 +131,8 @@ namespace mabe {
       config_script.PrintAST();
     }
 
-    size_t GetRandomSeed() const override { return random.GetSeed(); }
-    void SetRandomSeed(size_t in_seed) override {
+    uint64_t GetRandomSeed() const override { return random.GetSeed(); }
+    void SetRandomSeed(int64_t in_seed) override {
       std::cout << "Setting Random Seed to " << in_seed << std::endl;
       random.ResetSeed(in_seed);
     }
