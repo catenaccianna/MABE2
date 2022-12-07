@@ -431,7 +431,8 @@ namespace mabe {
       LinkVar(exit_cooldown, "exit_cooldown",
           "How many instruction executions the org will miss after taking an exit");
       LinkVar(score_exp_base, "score_exp_base",
-          "Merit is equal to score_exp_base^(org's score)");
+          "Merit is equal to score_exp_base^(org's score). "
+          "A base of zero instead just returns the exponent itself.");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
@@ -470,7 +471,12 @@ namespace mabe {
         inst_func_t func_move = [this, door_idx](org_t& hw, const org_t::inst_t& /*inst*/){
           DoorsState& state = hw.GetTrait<DoorsState>(trait_names.state_trait);
           double score = evaluator.Move(state, door_idx);
-          hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
+          if(score_exp_base == 0){
+            hw.SetTrait<double>(trait_names.score_trait, score);
+          }
+          else{
+            hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
+          }
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
