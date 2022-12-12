@@ -215,7 +215,7 @@ namespace mabe {
       );
       state.raw_score = 0;
       if(randomize_cues){
-        state.forward_cue = rand.GetUInt();
+        state.forward_cue = 1;//rand.GetUInt();
         state.right_cue = rand.GetUInt();
         while(state.right_cue == state.forward_cue){
           state.right_cue = rand.GetUInt();
@@ -224,12 +224,12 @@ namespace mabe {
         while(state.left_cue == state.forward_cue || state.left_cue == state.right_cue){
           state.left_cue = rand.GetUInt();
         }
-        state.empty_cue = rand.GetUInt();
-        while(state.empty_cue == state.forward_cue || 
-            state.empty_cue == state.right_cue || 
-            state.empty_cue == state.left_cue){
-          state.empty_cue = rand.GetUInt();
-        }
+        state.empty_cue = 0;//rand.GetUInt();
+        //while(state.empty_cue == state.forward_cue || 
+        //    state.empty_cue == state.right_cue || 
+        //    state.empty_cue == state.left_cue){
+        //  state.empty_cue = rand.GetUInt();
+        //}
       }
     }
     
