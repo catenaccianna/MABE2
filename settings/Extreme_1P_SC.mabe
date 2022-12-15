@@ -1,4 +1,4 @@
- Var random_seed = 0;                // Seed for random number generator; use 0 to base on time.
+random_seed = 0;                // Seed for random number generator; use 0 to base on time.
 Var pop_size = 1000;            // Number of organisms to evaluate in the population. (at least 1000 for NK)
 Var num_bits = 100;             // Number of bits in each organism.
 

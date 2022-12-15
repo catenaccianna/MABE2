@@ -5,20 +5,6 @@
  *
  *  @file  AnalyzePangenome.hpp
  *  @brief Crossover operator that tracks all existing genomes in order to randomly generate new genomes.
- * 
- *  ok so here's my problem: i would like to get more than one entry for each time step, with each edge that is in the graph.
-    not sure how to get it to enter 111->000 and then 111->101 for example, at the same time step. If this can be figured out,
-    then could also put in seq count for how many times 111 appears in the genome.
-    if i can write my own AddFunction then I could maybe make a loop for the "os<<" but 
-    could also just put all the datafile stuff in DBGraph, but then would just have one snap of that graph at one time
-    current idea: create multiple ostreams to append to as we iterate throguh the keys and adjs and slap into csv
-    data.Add(pangenome_graph.csv(), "Count", "number of times this sequence appears in the pangenome");
-    data.Add(pangenome_graph.csv(), "Adjacencies", "graph data");
-    data.Add(pangenome_graph.csv(), "From", "graph data");
-    data.Add(pangenome_graph.csv(), "To", "graph data");
-
-    OK SO go the csv without using datafile and just ofstream, but it's only for one graph at one time
-    can i pass the file back and forth so i keep appending to the same one at each time
  */
 
 #ifndef MABE_ANALYZE_PANGENOME_HPP
@@ -145,10 +131,10 @@ namespace mabe {
     bool Crossover(Collection & orgs) {
       string new_genome;
       for (Organism & bit_org : orgs) {
-        /**                                      // initial fitness & genome
+                                              // initial fitness & genome
         std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
         std::cout << bit_org.ToString()<<std::endl;
-        */
+        
         if(count_kmers){                        //call DeBruijnGraph modification
           new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability);
         }
@@ -156,10 +142,10 @@ namespace mabe {
           new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
         }
         bit_org.GenomeFromString(new_genome); //change organism's genome to new string
-        /**                                   //fitness value post-DBGraph modification
+                                           //fitness value post-DBGraph modification
         std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
         std::cout << bit_org.ToString()<<std::endl;
-        */
+        
       }
       return true; // @note selectTournament returns collection, evalNK returns double, what do i return??
     }
