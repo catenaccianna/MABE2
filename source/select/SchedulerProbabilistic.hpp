@@ -20,6 +20,8 @@ namespace mabe {
   class SchedulerProbabilistic : public Module {
   private:
     std::string trait = "merit";  ///< Which trait should we select on?
+    std::string parent_trait = "";  /**<  If not empty, parent sets its trait with 
+                                            this on repro */
     std::string reset_self_trait = "reset_self";  ///< What should we call the trait used to track resetting?
     double avg_updates = 0; ///< How many updates should organisms receive on average?
     int pop_id = 0;     ///< Which population are we selecting from?
@@ -52,6 +54,8 @@ namespace mabe {
       LinkPop(pop_id, "pop", "Which population should we select parents from?");
       LinkVar(avg_updates, "avg_updates", "How many updates should organism receive on average?");
       LinkVar(trait, "trait", "Which trait provides the fitness value to use?");
+      LinkVar(parent_trait, "parent_trait", "Does nothing if empty. Otherwise, on"
+          " reproduction the parent will reset their trait (as defined above) with this.");
       LinkVar(reset_self_trait, "reset_self_trait", 
           "Name of the trait tracking if an organism should reset itself");
       LinkVar(base_value, "base_value", "What value should the scheduler use for organisms"
@@ -67,6 +71,10 @@ namespace mabe {
     /// Register traits
     void SetupModule() override {
       AddRequiredTrait<double>(trait); ///< The fitness trait must be set by another module.
+      // If user has defined a parent trait, require it!
+      if(parent_trait.size() > 0){
+        AddRequiredTrait<double>(parent_trait);
+      }
       AddOwnedTrait<bool>(reset_self_trait, "Does org need reset?", false); ///< Allow organisms to reset themselves 
       AddRequiredTrait<size_t>(insts_executed_trait); ///< Number of instructions executed
       AddRequiredTrait<size_t>(genome_length_trait); ///< Length of org's genome 
@@ -108,7 +116,7 @@ namespace mabe {
       // Grab the variables we'll use repeatedly 
       emp::Random & random = control.GetRandom();
       Population & pop = control.GetPopulation(pop_id);
-      const size_t N = pop.GetSize();
+      const size_t N = pop.GetNumOrgs();
       // Make sure the population isn't empty
       if (pop.GetNumOrgs() == 0) {
         return 0;
@@ -166,6 +174,17 @@ namespace mabe {
         size_t org_idx = death_pos.Pos();
         emp_assert(org_idx < weight_map.GetSize());
         weight_map.Adjust(org_idx, 0);
+    }
+
+    void BeforeRepro(OrgPosition parent_pos) override{
+      if(parent_trait.size() > 0){
+        Population & pop = parent_pos.Pop();
+        const size_t org_idx = parent_pos.Pos();
+        const double trait_val = pop[org_idx].GetTrait<double>(parent_trait);
+        const double full_val = base_value + (trait_val * merit_scale_factor);
+        pop[org_idx].SetTrait<double>(trait, full_val);
+        weight_map.Adjust(org_idx, full_val);
+      }
     }
   };
 

@@ -55,14 +55,23 @@ Var avg_gen;
   scheduler.SCHEDULE();
   PRINT("UD:", GET_UPDATE(),
         "  pop_size=", main_pop.SIZE(),
+        "  num_orgs=", main_pop.NUM_ORGS(),
         "  gen_mean=", main_pop.CALC_MEAN("generation"),
-        "  mean_accuracy=", main_pop.CALC_MEAN("accuracy")
+        "\n",
+        "  mean_accuracy=", main_pop.CALC_MEAN("accuracy"),
+        "  max_accuracy=", main_pop.CALC_MAX("accuracy"),
+        "  mean_merit=", main_pop.CALC_MEAN("child_merit"),
+        "  max_merit=", main_pop.CALC_MAX("child_merit"),
+        "\n",
+        "  mean_self_merit=", main_pop.CALC_MEAN("merit"),
+        "  max_self_merit=", main_pop.CALC_MAX("merit"),
+        "  min_self_merit=", main_pop.CALC_MIN("merit"),
        );
   fit_file.WRITE();
   max_file.WRITE();
   avg_gen = main_pop.CALC_MEAN("generation");
   IF(ud >= max_updates){ 
-    sys.SNAPSHOT();
+    //sys.SNAPSHOT();
     EXIT();
   }
 };
