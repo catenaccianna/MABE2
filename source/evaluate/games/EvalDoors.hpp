@@ -475,6 +475,7 @@ namespace mabe {
             hw.SetTrait<double>(trait_names.score_trait, score);
           }
           else{
+            if(score > 300) score = 300; // Cap to avoid infinite values
             hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
           }
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
