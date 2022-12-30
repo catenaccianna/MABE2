@@ -63,17 +63,6 @@ namespace mabe {
       std::cout<< " setup mod ";
       data = emp::DataFile("DeBruijnGraph.csv");
 
-      std::function<size_t ()> updatefun = [this](){return control.GetUpdate();};
-      data.AddFun(updatefun,"Time", "The current time step/generation");
-      
-      data.AddFun<int>([this]() 
-      {
-        tuple<int, int> tup = pangenome_graph.kmer_count(count, from, to);
-        count = std::get<1>(tup);
-        return std::get<0>(tup);
-      }, "Count", "Number of times a kmer appears in the entire pangenome");
-     // seq count runs, we have updated seq count, and old from and old to.
-
       data.AddFun<string>([this]()
       {
         tuple<string, string> tup = pangenome_graph.from(count, from, to);
@@ -89,6 +78,17 @@ namespace mabe {
         return std::get<0>(tup);
       }, "To", "An adjacent kmer");
       // seq count runs, we have updated seq count and old from and to.
+      
+      data.AddFun<int>([this]() 
+      {
+        tuple<int, int> tup = pangenome_graph.kmer_count(count, from, to);
+        count = std::get<1>(tup);
+        return std::get<0>(tup);
+      }, "Count", "Number of times a kmer appears in the entire pangenome");
+     // seq count runs, we have updated seq count, and old from and old to.
+
+     std::function<size_t ()> updatefun = [this](){return control.GetUpdate();};
+      data.AddFun(updatefun,"Time", "The current time step/generation");
 
       data.PrintHeaderKeys();
     }
@@ -118,10 +118,10 @@ namespace mabe {
       // modify the organism & do the actual crossover
       string new_genome;
       if(count_kmers){
-        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability);
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 1, 0);
       }
       else{
-        new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 0, 0);
       }
       bit_org.GenomeFromString(new_genome); //pass in organism reference and change its genome
       bit_org.GenerateOutput();
@@ -136,10 +136,10 @@ namespace mabe {
         std::cout << bit_org.ToString()<<std::endl;
         
         if(count_kmers){                        //call DeBruijnGraph modification
-          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability);
+          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 1, 0);
         }
         else{ // (just a couple different ways of using DBGraph)
-          new_genome = pangenome_graph.modify_org_NSC(control.GetRandom(), bit_org.ToString(), probability);
+          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 0, 0);
         }
         bit_org.GenomeFromString(new_genome); //change organism's genome to new string
                                            //fitness value post-DBGraph modification
