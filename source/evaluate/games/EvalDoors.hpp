@@ -369,6 +369,7 @@ namespace mabe {
     EvalDoors_TraitNames trait_names;   /**<  Struct holding all of the trait names to keep 
                                               things tidy */
     size_t exit_cooldown = 0; /**< How long of a cooldown to apply when exit is taken **/
+    size_t exit_cooldown_step = 0;/**< How much exit_cooldown increases when exit is taken **/
     double score_exp_base = 2; /**< Merit is this value raised to the "score" power **/
     
   public:
@@ -430,6 +431,8 @@ namespace mabe {
           "Indices start at 1 for non-exit doors.");
       LinkVar(exit_cooldown, "exit_cooldown",
           "How many instruction executions the org will miss after taking an exit");
+      LinkVar(exit_cooldown_step, "exit_cooldown_step",
+          "How much exit_cooldown increasess each time the org takes an exit");
       LinkVar(score_exp_base, "score_exp_base",
           "Merit is equal to score_exp_base^(org's score). "
           "A base of zero instead just returns the exponent itself.");
@@ -480,7 +483,10 @@ namespace mabe {
           }
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
-          if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
+          if(door_idx == 0){
+            hw.IncreaseCooldown(exit_cooldown);
+            exit_cooldown += exit_cooldown_step;
+          }
         };
         std::stringstream sstr;
         sstr << "doors-move-" << door_idx;
