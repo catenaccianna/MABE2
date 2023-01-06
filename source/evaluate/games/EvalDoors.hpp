@@ -370,6 +370,8 @@ namespace mabe {
                                               things tidy */
     size_t exit_cooldown = 0; /**< How long of a cooldown to apply when exit is taken **/
     size_t exit_cooldown_step = 0;/**< How much exit_cooldown increases when exit is taken **/
+    size_t exit_cooldown_step_req = 1;/**< How many exits are required before 
+                                              exit_cooldown is increased **/
     double score_exp_base = 2; /**< Merit is this value raised to the "score" power **/
     
   public:
@@ -433,6 +435,8 @@ namespace mabe {
           "How many instruction executions the org will miss after taking an exit");
       LinkVar(exit_cooldown_step, "exit_cooldown_step",
           "How much exit_cooldown increasess each time the org takes an exit");
+      LinkVar(exit_cooldown_step_req, "exit_cooldown_step_req",
+          "How many exits are required before exit_cooldown increases by exit_cooldown_step");
       LinkVar(score_exp_base, "score_exp_base",
           "Merit is equal to score_exp_base^(org's score). "
           "A base of zero instead just returns the exponent itself.");
@@ -484,8 +488,15 @@ namespace mabe {
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0){
+            // Increase the cooldown and update cooldown value if needed
             hw.IncreaseCooldown(exit_cooldown);
-            exit_cooldown += exit_cooldown_step;
+            if(exit_cooldown_step > 0){
+              const size_t exits_taken = 
+                  hw.GetTrait<size_t>(trait_names.doors_taken_trait_vec[0]);
+              if(exits_taken % exit_cooldown_step == 0){
+                exit_cooldown += exit_cooldown_step;
+              }
+            }
           }
         };
         std::stringstream sstr;
