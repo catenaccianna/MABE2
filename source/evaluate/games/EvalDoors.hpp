@@ -48,8 +48,10 @@ namespace mabe {
                                                            taken*/
     std::string correct_exits_trait ="correct_exits"; /**< Name of trait that stores the 
                                                            number of exits correctly taken*/
-    std::string incorrect_exits_trait ="incorrect_exits"; /**< Name of trait that stores the
-                                                         number of exits incorrectly taken*/
+    std::string incorrect_exits_trait ="incorrect_exits"; /**< Name of trait that stores the 
+                                                           number of exits incorrectly taken*/
+    std::string exit_cooldown_trait ="exit_cooldown"; /**< Name of trait that stores the 
+                                                           orgs current exit cooldown*/
     std::string doors_taken_prefix = "doors_taken_"; /**< Prefix for multiple traits 
                                                           (one per door) */
     std::string doors_correct_prefix = "doors_correct_"; /**< Prefix for multiple traits 
@@ -455,6 +457,7 @@ namespace mabe {
       AddOwnedTrait<size_t>(trait_names.incorrect_doors_trait, "Incorrect doors taken", 0);
       AddOwnedTrait<size_t>(trait_names.correct_exits_trait, "Correct exits taken", 0);
       AddOwnedTrait<size_t>(trait_names.incorrect_exits_trait, "Incorrect exits taken", 0);
+      AddOwnedTrait<size_t>(trait_names.exit_cooldown_trait, "Exit cooldown", exit_cooldown);
       for(size_t door_idx = 0; door_idx < evaluator.GetNumDoors(); ++door_idx){
         trait_names.doors_taken_trait_vec.push_back(
             trait_names.doors_taken_prefix + emp::to_string(door_idx));
@@ -489,13 +492,19 @@ namespace mabe {
           evaluator.UpdateRecords(state, hw, trait_names);
           if(door_idx == 0){
             // Increase the cooldown and update cooldown value if needed
-            hw.IncreaseCooldown(exit_cooldown);
             if(exit_cooldown_step > 0){
+              size_t & org_cooldown = hw.GetTrait<size_t>(trait_names.exit_cooldown_trait);
+              std::cout << "Cooldown: " << org_cooldown << std::endl;
+              hw.IncreaseCooldown(org_cooldown);
               const size_t exits_taken = 
                   hw.GetTrait<size_t>(trait_names.doors_taken_trait_vec[0]);
-              if(exits_taken % exit_cooldown_step == 0){
-                exit_cooldown += exit_cooldown_step;
+              if(exits_taken % exit_cooldown_step_req == 0){
+                org_cooldown += exit_cooldown_step;
               }
+            }
+            else{ // Constant cooldown
+              std::cout << "Cooldown: " << exit_cooldown << std::endl;
+              hw.IncreaseCooldown(exit_cooldown);
             }
           }
         };
