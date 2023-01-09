@@ -88,11 +88,11 @@ namespace mabe {
         for(size_t update = 0; update < max_updates; ++update){
           org.ProcessStep();
           if(stop_at_birth && alive_orgs.GetFirstPop()->GetSize() > original_pop_size){
-            return 1;
+            return update; 
           }
         }
       }
-      return 0;
+      return max_updates;
     }
     
     /// Set up member functions associated with this class.
