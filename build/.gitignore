@@ -10,3 +10,4 @@ MABE
 phylo/ 
 # Instruction set output
 inst_set.txt
+inst_set_output.txt
