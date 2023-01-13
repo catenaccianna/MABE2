@@ -190,6 +190,7 @@ namespace mabe {
       emp_assert(!empty_org.IsNull(), "Empty org must be provided before extraction.");
       emp::Ptr<Organism> out_org = orgs[pos];
       orgs[pos] = empty_org;
+      //orgs[pos]->SetPopulation(*this);
       if (!out_org->IsEmpty()) {
         num_orgs--;
         out_org->ClearPopulation(); // Alert organism that it is no longer part of this population.
@@ -216,6 +217,7 @@ namespace mabe {
                  "Population can only PushEmpty() if empty_org is provided.");
       size_t pos = orgs.size();
       orgs.resize(orgs.size()+1, empty_org);
+      //orgs[pos]->SetPopulation(*this);
       return iterator_t(this, pos);
     }
 
@@ -235,6 +237,18 @@ namespace mabe {
                              "Return the capacity of the population.");
       info.AddMemberFunction("PTR", [](Population & target) { return (size_t) &target; },
                              "DEBUG: Give memory location of target.");
+      info.AddMemberFunction("SET_GENOME", 
+          [](Population & target, size_t index, const std::string& new_genome) { 
+            target.At(index).GenomeFromString(new_genome);
+            return index; 
+          },
+          "Set the genome of the organism at the given index");
+      info.AddMemberFunction("GET_AS_STRING", 
+          [](Population & target, size_t index) { 
+            const std::string& str = target.At(index).ToString();
+            return str;
+          },
+          "Get the string representation of the organism at the given index");
     }
 
 
@@ -264,7 +278,7 @@ namespace mabe {
         }
 
         // Organisms should point back at this population.
-        if (orgs[pos]->GetPopPtr() != this) {
+        if (!orgs[pos]->IsEmpty() && orgs[pos]->GetPopPtr() != this) {
           std::cerr << "ERROR: Population " << pop_id << " org# " << pos
                     << " does not point back at the correct population." << std::endl;
           return false;

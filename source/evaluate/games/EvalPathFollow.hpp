@@ -100,10 +100,7 @@ namespace mabe {
       FORWARD,
       LEFT,
       RIGHT,
-      START_UP,
-      START_DOWN,
-      START_LEFT,
-      START_RIGHT,
+      START,
       FINISH,
       OUT_OF_BOUNDS
     };
@@ -113,6 +110,8 @@ namespace mabe {
     bool randomize_cues; /**< If true, each org receives random values for each type for cue
                                   (consistent through lifetime). Otherwise, cues have same 
                                   values for all orgs */
+    double score_exp_base = 2; ///< Base of the exponential used to calculate an org's score
+    bool verbose = false; ///< Do we print extra information?
     
     public: 
     PathFollowEvaluator(emp::Random& _rand) : path_data_vec(), rand(_rand), 
@@ -126,6 +125,12 @@ namespace mabe {
       return static_cast<double>(state.raw_score) / path_data_vec[state.cur_map_idx].path_length;
     }
 
+    double GetExponentialScore(PathFollowState& state) const{
+      if(state.raw_score < 0) return 0;
+      return std::pow(score_exp_base, state.raw_score);
+    }
+
+
     /// Load a single map for the path following task
     template <typename... Ts>
     void LoadMap(Ts &&... args){
@@ -138,10 +143,7 @@ namespace mabe {
       path_data.grid.AddState(Tile::LEFT,        'L', 1.0, "turn_left");
       path_data.grid.AddState(Tile::RIGHT,       'R', 1.0, "turn_right");
       path_data.grid.AddState(Tile::FINISH,      'X', 1.0, "finish");
-      path_data.grid.AddState(Tile::START_UP,    '^', 1.0, "start_up");
-      path_data.grid.AddState(Tile::START_DOWN,  'v', 1.0, "start_down");
-      path_data.grid.AddState(Tile::START_LEFT,  '<', 1.0, "start_left");
-      path_data.grid.AddState(Tile::START_RIGHT, '>', 1.0, "start_right");
+      path_data.grid.AddState(Tile::START,    'O', 1.0, "start");
       // Load data
       path_data.grid.Load(std::forward<Ts>(args)...);
       // Extract data from each tile and store
@@ -165,28 +167,9 @@ namespace mabe {
               path_data.path_length++;
               has_finish = true;
               break;
-            case Tile::START_UP: 
+            case Tile::START: 
               path_data.start_x = col_idx;
               path_data.start_y = row_idx;
-              path_data.start_facing = 1;
-              has_start = true;
-              break;
-            case Tile::START_DOWN:
-              path_data.start_x = col_idx;
-              path_data.start_y = row_idx;
-              path_data.start_facing = 5;
-              has_start = true;
-              break;
-            case Tile::START_LEFT:
-              path_data.start_x = col_idx;
-              path_data.start_y = row_idx;
-              path_data.start_facing = 7;
-              has_start = true;
-              break;
-            case Tile::START_RIGHT:
-              path_data.start_x = col_idx;
-              path_data.start_y = row_idx;
-              path_data.start_facing = 3;
               has_start = true;
               break;
           }
@@ -198,6 +181,11 @@ namespace mabe {
       if(!has_finish){
         emp_error("Error! Map does not have a finish tile! (character: X)");
       }
+      if(!path_data.grid.HasMetadata("start_facing")){
+        emp_error("Error! Map does not have metadata \"start_facing\"!");
+      }
+      path_data.start_facing = 
+          static_cast<int>(path_data.grid.GetMetadata("start_facing").AsDouble());
       std::cout << "Map #" << (path_data_vec.size() - 1) << " is " 
         << path_data.grid.GetWidth() << "x" << path_data.grid.GetHeight() << ", with " 
         << path_data.path_length << " path tiles!" << std::endl;
@@ -216,6 +204,7 @@ namespace mabe {
     void InitializeState(PathFollowState& state, bool reset_map = true){
       state.initialized = true;
       if(reset_map) state.cur_map_idx = rand.GetUInt(path_data_vec.size());;
+      if(verbose) std::cout << "[PATH_FOLLOW] initializing " << state.cur_map_idx << std::endl;
       emp_assert(path_data_vec.size() > state.cur_map_idx, "Cannot initialize state before loading the map!");
       state.visited_tiles.Resize(path_data_vec[state.cur_map_idx].grid.GetSize()); 
       state.visited_tiles.Clear();
@@ -226,7 +215,7 @@ namespace mabe {
       );
       state.raw_score = 0;
       if(randomize_cues){
-        state.forward_cue = rand.GetUInt();
+        state.forward_cue = 1;//rand.GetUInt();
         state.right_cue = rand.GetUInt();
         while(state.right_cue == state.forward_cue){
           state.right_cue = rand.GetUInt();
@@ -235,12 +224,12 @@ namespace mabe {
         while(state.left_cue == state.forward_cue || state.left_cue == state.right_cue){
           state.left_cue = rand.GetUInt();
         }
-        state.empty_cue = rand.GetUInt();
-        while(state.empty_cue == state.forward_cue || 
-            state.empty_cue == state.right_cue || 
-            state.empty_cue == state.left_cue){
-          state.empty_cue = rand.GetUInt();
-        }
+        state.empty_cue = 0;//rand.GetUInt();
+        //while(state.empty_cue == state.forward_cue || 
+        //    state.empty_cue == state.right_cue || 
+        //    state.empty_cue == state.left_cue){
+        //  state.empty_cue = rand.GetUInt();
+        //}
       }
     }
     
@@ -276,23 +265,26 @@ namespace mabe {
     /// Move the organism in the direction it is facing, then update and return score
     double Move(PathFollowState& state, int scale_factor = 1){
       if(!state.initialized) InitializeState(state);
+      if(verbose) std::cout << "[PATH_FOLLOW] move " << scale_factor << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
       MarkVisited(state);
       state.raw_score += score;
-      return GetNormalizedScore(state);
+      return GetExponentialScore(state);
     }
     
     /// Rotate the organism clockwise by 90 degrees
     void RotateRight(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
-      state.status.Rotate(2);
+      if(verbose) std::cout << "[PATH_FOLLOW] rotate 1" << std::endl;
+      state.status.Rotate(1);
     }
 
     /// Rotate the organism counterclockwise by 90 degrees
     void RotateLeft(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
-      state.status.Rotate(-2);
+      if(verbose) std::cout << "[PATH_FOLLOW] rotate -1" << std::endl;
+      state.status.Rotate(-1);
     }
 
     /// Fetch the cue value of the tile the organism is currently on
@@ -314,16 +306,7 @@ namespace mabe {
         case Tile::FORWARD:
           return state.forward_cue;
           break;
-        case Tile::START_UP:
-          return state.forward_cue;
-          break;
-        case Tile::START_DOWN:
-          return state.forward_cue;
-          break;
-        case Tile::START_LEFT:
-          return state.forward_cue;
-          break;
-        case Tile::START_RIGHT:
+        case Tile::START:
           return state.forward_cue;
           break;
         case Tile::FINISH:
@@ -375,6 +358,10 @@ namespace mabe {
           "List of map files to load, separated by semicolons(;)");
       LinkVar(evaluator.randomize_cues, "randomize_cues", 
           "If true, cues are assigned random values in for each new path");
+      LinkVar(evaluator.score_exp_base, "score_exp_base", 
+          "Base of the exponential used to calculate an organism's score");
+      LinkVar(evaluator.verbose, "verbose", 
+           "Should we print extra info?");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms

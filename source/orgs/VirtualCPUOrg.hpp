@@ -78,7 +78,7 @@ namespace mabe {
 
     /// Apply mutations according to the passed parameters, and then call the given function 
     /// for each mutation
-    size_t Mutate_Generic(
+    size_t Mutate_Site_Generic(
         std::function<void(size_t, emp::Random&)> mut_func,
         emp::CombinedBinomialDistribution& dist, 
         emp::Random& random, 
@@ -114,6 +114,14 @@ namespace mabe {
       }
       return num_muts;
     }
+    size_t Mutate_Genome_Generic(
+        std::function<void(size_t, emp::Random&)> mut_func, double prob, emp::Random& random){
+      if(prob <= 0) return 0; // Avoid rng call
+      if(!random.P(prob)) return 0;
+      const size_t pos = random.GetUInt(GetGenomeSize());
+      mut_func(pos, random);
+      return 1;
+    }
 
   public:
     VirtualCPUOrg(OrganismManager<VirtualCPUOrg> & _manager)
@@ -128,9 +136,12 @@ namespace mabe {
     /// variables used in calculating mutations)
     struct ManagerData : public Organism::ManagerData {
       // Configuration variables
-      double point_mut_prob = 0.01;      ///< Per-site point mutation rate.
-      double insertion_mut_prob = 0.01;  ///< Per-site insertion mutation rate.
-      double deletion_mut_prob = 0.01;   ///< Per-site deletion mutation rate.
+      double site_point_mut_prob = 0.01;      ///< Per-site point mutation rate.
+      double site_insertion_mut_prob = 0.01;  ///< Per-site insertion mutation rate.
+      double site_deletion_mut_prob = 0.01;   ///< Per-site deletion mutation rate.
+      double genome_point_mut_prob = 0;       ///< Per-genome point mutation rate.
+      double genome_insertion_mut_prob = 0;   ///< Per-genome insertion mutation rate.
+      double genome_deletion_mut_prob = 0;    ///< Per-genome deletion mutation rate.
       size_t init_length = 100;   ///< Length of new organisms.
       bool init_random = true;    ///< Should we randomize ancestor?  (false = all zeros)
       size_t eval_time = 500;     ///< How long should the CPU be given on each evaluate?
@@ -172,33 +183,60 @@ namespace mabe {
                                                    execute instruction.*/
       int max_speculative_insts = -1;         /**< Maximum number of insts. to speculatively 
                                                   execute. -1 for genome length. */
+      std::string num_insts_executed_name = "insts_executed"; /**< Trait name for the number
+                                                                    of instructions 
+                                                                    executed */
+      
       // Internal use
-      emp::CombinedBinomialDistribution point_mut_dist; ///< Distribution of number of point mutations to occur.
-      emp::CombinedBinomialDistribution insertion_mut_dist; ///< Distribution of number of insertion mutations to occur.
-      emp::CombinedBinomialDistribution deletion_mut_dist; ///< Distribution of number of deletion mutations to occur.
+      /// Distribution of number of point mutations to occur.
+      emp::CombinedBinomialDistribution site_point_mut_dist; 
+      /// Distribution of number of insertion mutations to occur.
+      emp::CombinedBinomialDistribution site_insertion_mut_dist; 
+      /// Distribution of number of deletion mutations to occur.
+      emp::CombinedBinomialDistribution site_deletion_mut_dist; 
       emp::BitVector mut_sites; ///< A pre-allocated vector for mutation sites. 
     };
 
     /// Mutate (in place) the current organism.
     size_t Mutate(emp::Random & random) override {
       size_t mut_count = 0;
-      mut_count += Mutate_Generic(
+      // Per-site mutations
+      mut_count += Mutate_Site_Generic(
         [this](size_t pos, emp::Random& random){
           Mutate_Point(pos, random);
         },
-        SharedData().point_mut_dist, random, true
+        SharedData().site_point_mut_dist, random, true
       );
-      mut_count += Mutate_Generic(
+      mut_count += Mutate_Site_Generic(
         [this](size_t pos, emp::Random& random){
           Mutate_Insertion(pos, random);
         },
-        SharedData().insertion_mut_dist, random, false 
+        SharedData().site_insertion_mut_dist, random, false 
       );
-      mut_count += Mutate_Generic(
+      mut_count += Mutate_Site_Generic(
         [this](size_t pos, emp::Random& random){
           Mutate_Deletion(pos, random);
         },
-        SharedData().deletion_mut_dist, random, false
+        SharedData().site_deletion_mut_dist, random, false
+      );
+      // Per-genome mutations
+      mut_count += Mutate_Genome_Generic(
+        [this](size_t pos, emp::Random& random){
+          Mutate_Point(pos, random);
+        },
+        SharedData().genome_point_mut_prob, random
+      );
+      mut_count += Mutate_Genome_Generic(
+        [this](size_t pos, emp::Random& random){
+          Mutate_Insertion(pos, random);
+        },
+        SharedData().genome_insertion_mut_prob, random 
+      );
+      mut_count += Mutate_Genome_Generic(
+        [this](size_t pos, emp::Random& random){
+          Mutate_Deletion(pos, random);
+        },
+        SharedData().genome_deletion_mut_prob, random
       );
       // Update hardware and traits accordingly
       ResetWorkingGenome();
@@ -347,12 +385,19 @@ namespace mabe {
 
     /// Set up configuration options for this organism type
     void SetupConfig() override {
-      GetManager().LinkVar(SharedData().point_mut_prob, "point_mut_prob",
+      GetManager().LinkVar(SharedData().site_point_mut_prob, "site_point_mut_prob",
                       "Per-site probability of a point mutation");
-      GetManager().LinkVar(SharedData().insertion_mut_prob, "insertion_mut_prob",
+      GetManager().LinkVar(SharedData().site_insertion_mut_prob, "site_insertion_mut_prob",
                       "Per-site probability of a insertion mutation");
-      GetManager().LinkVar(SharedData().deletion_mut_prob, "deletion_mut_prob",
+      GetManager().LinkVar(SharedData().site_deletion_mut_prob, "site_deletion_mut_prob",
                       "Per-site probability of a deletion mutation");
+      GetManager().LinkVar(SharedData().genome_point_mut_prob, "genome_point_mut_prob",
+                      "Per-genome probability of a point mutation");
+      GetManager().LinkVar(SharedData().genome_insertion_mut_prob, 
+                      "genome_insertion_mut_prob",
+                      "Per-genome probability of a insertion mutation");
+      GetManager().LinkVar(SharedData().genome_deletion_mut_prob, "genome_deletion_mut_prob",
+                      "Per-genome probability of a deletion mutation");
       GetManager().LinkFuns<size_t>([this](){ return GetGenomeSize(); },
                        [this](const size_t & /*N*/){ ClearGenome(); /*PushDefaultInst(N);*/ },
                        "N", "Initial number of instructions in genome");
@@ -430,6 +475,8 @@ namespace mabe {
           "Organism's generation", 0);
       GetManager().AddOwnedTrait<size_t>(SharedData().genome_length_name, 
           "Length of organism's genome", 0);
+      GetManager().AddOwnedTrait<size_t>(SharedData().num_insts_executed_name, 
+          "Number of instructions executed.", 0);
       SetupInstLib();
       if(!SharedData().inst_set_output_filename.empty()){
         WriteInstructionSetFile(SharedData().inst_set_output_filename);
@@ -445,7 +492,7 @@ namespace mabe {
       for(size_t inst_offset = 0; inst_offset < GetInstLib().GetSize(); ++inst_offset){
         char inst_char = 'a' + inst_offset; 
         if(inst_offset > 25) inst_char = 'A' + (inst_offset - 26);
-        size_t inst_id = GetInstLib().GetID(inst_char);
+        size_t inst_id = GetInstLib().GetIDFromSymbol(inst_char);
         size_t inst_idx = GetInstLib().GetIndex(inst_id);
         ss << inst_idx << ", " << inst_id << ", " << inst_char << ", " 
            << GetInstLib().GetName(inst_idx); 
@@ -585,6 +632,7 @@ namespace mabe {
         }
         Process(1, SharedData().verbose);
       }
+      SetTrait<size_t>(SharedData().num_insts_executed_name, num_insts_executed);
       return true;
     }
 
@@ -592,21 +640,31 @@ namespace mabe {
     /// current size or projected sizes)
     void SetupMutationDistribution(){
       if(GetGenomeSize() != 0){ // If we have a genome size, use it!
-        SharedData().point_mut_dist.Setup(SharedData().point_mut_prob, GetGenomeSize());
-        SharedData().insertion_mut_dist.Setup(SharedData().insertion_mut_prob, 
-            GetGenomeSize());
-        SharedData().deletion_mut_dist.Setup(SharedData().deletion_mut_prob, GetGenomeSize());
+        SharedData().site_point_mut_dist.Setup(
+            SharedData().site_point_mut_prob, GetGenomeSize());
+        SharedData().site_insertion_mut_dist.Setup(
+            SharedData().site_insertion_mut_prob, GetGenomeSize());
+        SharedData().site_deletion_mut_dist.Setup(
+            SharedData().site_deletion_mut_prob, GetGenomeSize());
         SharedData().mut_sites.Resize(GetGenomeSize());
       }
       else{ // Otherwise, use the genome size set in the configuration file
-        SharedData().point_mut_dist.Setup(SharedData().point_mut_prob, 
-            SharedData().init_length);
-        SharedData().insertion_mut_dist.Setup(SharedData().insertion_mut_prob, 
-            SharedData().init_length);
-        SharedData().deletion_mut_dist.Setup(SharedData().deletion_mut_prob, 
-            SharedData().init_length);
+        SharedData().site_point_mut_dist.Setup(
+            SharedData().site_point_mut_prob, SharedData().init_length);
+        SharedData().site_insertion_mut_dist.Setup(
+            SharedData().site_insertion_mut_prob, SharedData().init_length);
+        SharedData().site_deletion_mut_dist.Setup(
+            SharedData().site_deletion_mut_prob, SharedData().init_length);
         SharedData().mut_sites.Resize(SharedData().init_length);
       }
+    }
+
+    /// Fetch a string representation of the genome
+    std::string ToString() const override { return  GetRawGenomeString(); }
+    
+    void GenomeFromString(const std::string & new_genome) override {
+      LoadFromChars(new_genome);
+      ResetHardware();
     }
 
   };

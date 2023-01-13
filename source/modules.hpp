@@ -14,6 +14,7 @@
 // Evaluation Modules
 #include "evaluate/games/EvalMancala.hpp"
 #include "evaluate/games/EvalPathFollow.hpp"
+#include "evaluate/games/EvalPatchHarvest.hpp"
 #include "evaluate/games/EvalDoors.hpp"
 #include "evaluate/static/EvalCountBits.hpp"
 #include "evaluate/static/EvalDiagnostic.hpp"
@@ -36,6 +37,7 @@
 #include "placement/AnnotatePlacement_Position.hpp"
 #include "placement/RandomReplacement.hpp"
 #include "placement/MaxSizePlacement.hpp"
+#include "placement/NeighborPlacement.hpp"
 
 // Selection Modules
 #include "select/SelectElite.hpp"
@@ -58,3 +60,4 @@
 #include "orgs/instructions/VirtualCPU_Inst_Label.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Manipulation.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Replication.hpp"
+#include "orgs/instructions/VirtualCPU_Inst_Dictionary.hpp"
