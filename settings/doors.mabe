@@ -104,6 +104,13 @@ VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
                               // One instruction name per line. Order is maintained.
   inst_set_output_filename = "inst_set.txt";
   expanded_nop_args = 1;        // If true, some instructions (e.g., math) will use multiple nops to fully define the registers used
+  use_speculative_execution = 1;// If true, we run as many instructions as possible and then 
+                                //    cache the results. Instructions that interact with the 
+                                //    population or other organisms will halt 
+                                //    speculative execution.
+  max_speculative_insts = -1; // Maximum number of instructions to speculatively execute. 
+                              //    -1 for genome length.
+
 };
 AnalyzeSystematics sys{
   data_file_name = "phylo/phylogenetic_data.csv";// Filename for systematics data file.

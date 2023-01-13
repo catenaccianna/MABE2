@@ -48,8 +48,10 @@ namespace mabe {
                                                            taken*/
     std::string correct_exits_trait ="correct_exits"; /**< Name of trait that stores the 
                                                            number of exits correctly taken*/
-    std::string incorrect_exits_trait ="incorrect_exits"; /**< Name of trait that stores the
-                                                         number of exits incorrectly taken*/
+    std::string incorrect_exits_trait ="incorrect_exits"; /**< Name of trait that stores the 
+                                                           number of exits incorrectly taken*/
+    std::string exit_cooldown_trait ="exit_cooldown"; /**< Name of trait that stores the 
+                                                           orgs current exit cooldown*/
     std::string doors_taken_prefix = "doors_taken_"; /**< Prefix for multiple traits 
                                                           (one per door) */
     std::string doors_correct_prefix = "doors_correct_"; /**< Prefix for multiple traits 
@@ -369,6 +371,9 @@ namespace mabe {
     EvalDoors_TraitNames trait_names;   /**<  Struct holding all of the trait names to keep 
                                               things tidy */
     size_t exit_cooldown = 0; /**< How long of a cooldown to apply when exit is taken **/
+    size_t exit_cooldown_step = 0;/**< How much exit_cooldown increases when exit is taken **/
+    size_t exit_cooldown_step_req = 1;/**< How many exits are required before 
+                                              exit_cooldown is increased **/
     double score_exp_base = 2; /**< Merit is this value raised to the "score" power **/
     
   public:
@@ -430,8 +435,13 @@ namespace mabe {
           "Indices start at 1 for non-exit doors.");
       LinkVar(exit_cooldown, "exit_cooldown",
           "How many instruction executions the org will miss after taking an exit");
+      LinkVar(exit_cooldown_step, "exit_cooldown_step",
+          "How much exit_cooldown increasess each time the org takes an exit");
+      LinkVar(exit_cooldown_step_req, "exit_cooldown_step_req",
+          "How many exits are required before exit_cooldown increases by exit_cooldown_step");
       LinkVar(score_exp_base, "score_exp_base",
-          "Merit is equal to score_exp_base^(org's score)");
+          "Merit is equal to score_exp_base^(org's score). "
+          "A base of zero instead just returns the exponent itself.");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
@@ -447,6 +457,7 @@ namespace mabe {
       AddOwnedTrait<size_t>(trait_names.incorrect_doors_trait, "Incorrect doors taken", 0);
       AddOwnedTrait<size_t>(trait_names.correct_exits_trait, "Correct exits taken", 0);
       AddOwnedTrait<size_t>(trait_names.incorrect_exits_trait, "Incorrect exits taken", 0);
+      AddOwnedTrait<size_t>(trait_names.exit_cooldown_trait, "Exit cooldown", exit_cooldown);
       for(size_t door_idx = 0; door_idx < evaluator.GetNumDoors(); ++door_idx){
         trait_names.doors_taken_trait_vec.push_back(
             trait_names.doors_taken_prefix + emp::to_string(door_idx));
@@ -470,10 +481,30 @@ namespace mabe {
         inst_func_t func_move = [this, door_idx](org_t& hw, const org_t::inst_t& /*inst*/){
           DoorsState& state = hw.GetTrait<DoorsState>(trait_names.state_trait);
           double score = evaluator.Move(state, door_idx);
-          hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
+          if(score_exp_base == 0){
+            hw.SetTrait<double>(trait_names.score_trait, score);
+          }
+          else{
+            if(score > 300) score = 300; // Cap to avoid infinite values
+            hw.SetTrait<double>(trait_names.score_trait, std::pow(score_exp_base, score));
+          }
           hw.SetTrait<double>(trait_names.accuracy_trait, evaluator.GetDoorAccuracy(state));
           evaluator.UpdateRecords(state, hw, trait_names);
-          if(door_idx == 0) hw.IncreaseCooldown(exit_cooldown);
+          if(door_idx == 0){
+            // Increase the cooldown and update cooldown value if needed
+            if(exit_cooldown_step > 0){
+              size_t & org_cooldown = hw.GetTrait<size_t>(trait_names.exit_cooldown_trait);
+              hw.IncreaseCooldown(org_cooldown);
+              const size_t exits_taken = 
+                  hw.GetTrait<size_t>(trait_names.doors_taken_trait_vec[0]);
+              if(exits_taken % exit_cooldown_step_req == 0){
+                org_cooldown += exit_cooldown_step;
+              }
+            }
+            else{ // Constant cooldown
+              hw.IncreaseCooldown(exit_cooldown);
+            }
+          }
         };
         std::stringstream sstr;
         sstr << "doors-move-" << door_idx;

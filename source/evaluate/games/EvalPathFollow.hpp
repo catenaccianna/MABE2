@@ -111,6 +111,7 @@ namespace mabe {
                                   (consistent through lifetime). Otherwise, cues have same 
                                   values for all orgs */
     double score_exp_base = 2; ///< Base of the exponential used to calculate an org's score
+    bool verbose = false; ///< Do we print extra information?
     
     public: 
     PathFollowEvaluator(emp::Random& _rand) : path_data_vec(), rand(_rand), 
@@ -203,6 +204,7 @@ namespace mabe {
     void InitializeState(PathFollowState& state, bool reset_map = true){
       state.initialized = true;
       if(reset_map) state.cur_map_idx = rand.GetUInt(path_data_vec.size());;
+      if(verbose) std::cout << "[PATH_FOLLOW] initializing " << state.cur_map_idx << std::endl;
       emp_assert(path_data_vec.size() > state.cur_map_idx, "Cannot initialize state before loading the map!");
       state.visited_tiles.Resize(path_data_vec[state.cur_map_idx].grid.GetSize()); 
       state.visited_tiles.Clear();
@@ -213,7 +215,7 @@ namespace mabe {
       );
       state.raw_score = 0;
       if(randomize_cues){
-        state.forward_cue = rand.GetUInt();
+        state.forward_cue = 1;//rand.GetUInt();
         state.right_cue = rand.GetUInt();
         while(state.right_cue == state.forward_cue){
           state.right_cue = rand.GetUInt();
@@ -222,12 +224,12 @@ namespace mabe {
         while(state.left_cue == state.forward_cue || state.left_cue == state.right_cue){
           state.left_cue = rand.GetUInt();
         }
-        state.empty_cue = rand.GetUInt();
-        while(state.empty_cue == state.forward_cue || 
-            state.empty_cue == state.right_cue || 
-            state.empty_cue == state.left_cue){
-          state.empty_cue = rand.GetUInt();
-        }
+        state.empty_cue = 0;//rand.GetUInt();
+        //while(state.empty_cue == state.forward_cue || 
+        //    state.empty_cue == state.right_cue || 
+        //    state.empty_cue == state.left_cue){
+        //  state.empty_cue = rand.GetUInt();
+        //}
       }
     }
     
@@ -263,6 +265,7 @@ namespace mabe {
     /// Move the organism in the direction it is facing, then update and return score
     double Move(PathFollowState& state, int scale_factor = 1){
       if(!state.initialized) InitializeState(state);
+      if(verbose) std::cout << "[PATH_FOLLOW] move " << scale_factor << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
       MarkVisited(state);
@@ -273,12 +276,14 @@ namespace mabe {
     /// Rotate the organism clockwise by 90 degrees
     void RotateRight(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
+      if(verbose) std::cout << "[PATH_FOLLOW] rotate 1" << std::endl;
       state.status.Rotate(1);
     }
 
     /// Rotate the organism counterclockwise by 90 degrees
     void RotateLeft(PathFollowState& state){
       if(!state.initialized) InitializeState(state);
+      if(verbose) std::cout << "[PATH_FOLLOW] rotate -1" << std::endl;
       state.status.Rotate(-1);
     }
 
@@ -355,6 +360,8 @@ namespace mabe {
           "If true, cues are assigned random values in for each new path");
       LinkVar(evaluator.score_exp_base, "score_exp_base", 
           "Base of the exponential used to calculate an organism's score");
+      LinkVar(evaluator.verbose, "verbose", 
+           "Should we print extra info?");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
