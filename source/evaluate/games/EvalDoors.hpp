@@ -494,7 +494,6 @@ namespace mabe {
             // Increase the cooldown and update cooldown value if needed
             if(exit_cooldown_step > 0){
               size_t & org_cooldown = hw.GetTrait<size_t>(trait_names.exit_cooldown_trait);
-              std::cout << "Cooldown: " << org_cooldown << std::endl;
               hw.IncreaseCooldown(org_cooldown);
               const size_t exits_taken = 
                   hw.GetTrait<size_t>(trait_names.doors_taken_trait_vec[0]);
@@ -503,7 +502,6 @@ namespace mabe {
               }
             }
             else{ // Constant cooldown
-              std::cout << "Cooldown: " << exit_cooldown << std::endl;
               hw.IncreaseCooldown(exit_cooldown);
             }
           }
