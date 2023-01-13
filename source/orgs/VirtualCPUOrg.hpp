@@ -492,7 +492,7 @@ namespace mabe {
       for(size_t inst_offset = 0; inst_offset < GetInstLib().GetSize(); ++inst_offset){
         char inst_char = 'a' + inst_offset; 
         if(inst_offset > 25) inst_char = 'A' + (inst_offset - 26);
-        size_t inst_id = GetInstLib().GetID(inst_char);
+        size_t inst_id = GetInstLib().GetIDFromSymbol(inst_char);
         size_t inst_idx = GetInstLib().GetIndex(inst_id);
         ss << inst_idx << ", " << inst_id << ", " << inst_char << ", " 
            << GetInstLib().GetName(inst_idx); 
@@ -657,6 +657,14 @@ namespace mabe {
             SharedData().site_deletion_mut_prob, SharedData().init_length);
         SharedData().mut_sites.Resize(SharedData().init_length);
       }
+    }
+
+    /// Fetch a string representation of the genome
+    std::string ToString() const override { return  GetRawGenomeString(); }
+    
+    void GenomeFromString(const std::string & new_genome) override {
+      LoadFromChars(new_genome);
+      ResetHardware();
     }
 
   };
