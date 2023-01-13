@@ -237,6 +237,18 @@ namespace mabe {
                              "Return the capacity of the population.");
       info.AddMemberFunction("PTR", [](Population & target) { return (size_t) &target; },
                              "DEBUG: Give memory location of target.");
+      info.AddMemberFunction("SET_GENOME", 
+          [](Population & target, size_t index, const std::string& new_genome) { 
+            target.At(index).GenomeFromString(new_genome);
+            return index; 
+          },
+          "Set the genome of the organism at the given index");
+      info.AddMemberFunction("GET_AS_STRING", 
+          [](Population & target, size_t index) { 
+            const std::string& str = target.At(index).ToString();
+            return str;
+          },
+          "Get the string representation of the organism at the given index");
     }
 
 
