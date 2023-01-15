@@ -665,6 +665,7 @@ namespace mabe {
     void GenomeFromString(const std::string & new_genome) override {
       LoadFromChars(new_genome);
       ResetHardware();
+      Organism::SetTrait<size_t>(SharedData().genome_length_name, GetGenomeSize());
     }
 
   };
