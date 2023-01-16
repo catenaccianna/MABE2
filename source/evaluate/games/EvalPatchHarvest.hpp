@@ -76,6 +76,8 @@ namespace mabe {
 
     emp::vector<MapData> map_data_vec; ///< All the relevant data for each map loaded
     emp::Random& rand;          ///< Reference to the main random number generator of MABE
+    double score_exp_base = 2; /**< The base of the merit exponential 
+                                    (raised to the score power)*/
     
     public: 
     bool verbose = false;
@@ -89,6 +91,9 @@ namespace mabe {
     double GetNormalizedScore(PatchHarvestState& state) const{
       if(state.raw_score < 0) return 0;
       return state.raw_score / map_data_vec[state.cur_map_idx].total_nutrients;
+    }
+    double GetExponentialScore(PatchHarvestState& state) const{
+      return std::pow(score_exp_base, state.raw_score);
     }
 
     /// Load a single map for the path following task
@@ -195,7 +200,7 @@ namespace mabe {
       double score = GetCurrentPosScore(state);
       state.raw_score += score;
       if(verbose) std::cout << "Score: " << state.raw_score << std::endl;
-      return GetNormalizedScore(state);
+      return GetExponentialScore(state);
     }
     
     /// Rotate the organism clockwise by 45 degrees
@@ -281,6 +286,8 @@ namespace mabe {
           "Which trait will store the index of the current map?");
       LinkVar(evaluator.verbose, "verbose", 
           "If true (1), prints extra information about the organisms actions");
+      LinkVar(evaluator.score_exp_base, "score_exp_base", 
+          "Base of the merit exponential. Merit = this^score.");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms

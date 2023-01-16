@@ -249,6 +249,16 @@ namespace mabe {
             return str;
           },
           "Get the string representation of the organism at the given index");
+      info.AddMemberFunction("GET_AS_STRING", 
+          [](Population & target) {
+            std::stringstream sstr; 
+            for(size_t i = 0; i < target.GetSize(); ++i){
+              if(target.IsEmpty(i)) sstr << ".";
+              else sstr << "X";
+            }
+            return sstr.str();
+          },
+          "Return a string showing which positions in the population contain orgs");
     }
 
 
