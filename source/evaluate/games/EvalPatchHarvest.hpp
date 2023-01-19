@@ -248,14 +248,17 @@ namespace mabe {
     using inst_func_t = VirtualCPUOrg::inst_func_t;
 
   private:
-    std::string score_trait = "score";   ///< Name of trait for organism performance
-    std::string state_trait ="state";    ///< Name of trait that stores the path follow state
-    std::string map_filenames="";        ///< ;-separated list map filenames to load
+    std::string score_trait = "score";      ///< Name of trait for organism performance
+    std::string state_trait ="state";       /**< Name of trait that stores the patch
+                                                  harvest state **/
+    std::string map_filenames="";           ///< ;-separated list map filenames to load
     std::string movement_trait="movements"; ///< Trait holding all org movements 
-    std::string map_idx_trait="map_idx"; ///< Trait holding the index of the current map
-    PatchHarvestEvaluator evaluator;     /**< The evaluator that does all of the actually 
-                                            computing and bookkeeping for the path follow 
-                                            task */
+    std::string map_idx_trait="map_idx";    ///< Trait holding the index of the current map
+    bool track_movement = true;             /**< If true, track every move or turn the 
+                                                  organism performs **/
+    PatchHarvestEvaluator evaluator;        /**< The evaluator that does all of the actually 
+                                                  computing and bookkeeping for the patch 
+                                                  harvest task */
     int pop_id = 0;              /**< ID of the population to evaluate 
                                          (and provide instructions to) */
 
@@ -288,13 +291,17 @@ namespace mabe {
           "If true (1), prints extra information about the organisms actions");
       LinkVar(evaluator.score_exp_base, "score_exp_base", 
           "Base of the merit exponential. Merit = this^score.");
+      LinkVar(track_movement, "track_movement", 
+          "If true (1), track every move or turn the organism performs");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
     void SetupModule() override {
       AddSharedTrait<double>(score_trait, "Path following score", 0.0);
       AddOwnedTrait<PatchHarvestState>(state_trait, "Organism's patch harvest state", { }); 
-      AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
+      if(track_movement){
+        AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
+      }
       AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", { }); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
@@ -310,8 +317,10 @@ namespace mabe {
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             double score = evaluator.Move(state);
             hw.SetTrait<double>(score_trait, score);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "M");
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "M");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
@@ -322,8 +331,10 @@ namespace mabe {
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             evaluator.RotateRight(state);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "R");
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "R");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
@@ -334,8 +345,10 @@ namespace mabe {
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             evaluator.RotateLeft(state);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "L");
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "L");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
