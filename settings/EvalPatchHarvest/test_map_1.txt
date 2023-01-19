@@ -1,3 +1,9 @@
+$start_facing = 2
+$start_x = 31
+$start_y = 24
+$width = 50
+$height = 50
+$name = grid_E3_2
 oooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooo

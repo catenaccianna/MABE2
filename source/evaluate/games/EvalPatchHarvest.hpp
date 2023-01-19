@@ -57,7 +57,12 @@ namespace mabe {
   /// \brief Information of a single path that was loaded from file
   struct MapData{
     emp::StateGrid grid;  ///< The tile data of the path and surrounding emptiness 
-    size_t total_nutrients; ///< Number of good ("path") tiles in this map 
+    size_t start_x;       ///< X coordinate of starting position
+    size_t start_y;       ///< Y coordinate of starting position
+    int start_facing;     /**< Facing direction for new organisms. 
+                              0=UL, 1=Up, 2=UR, 3=Right, 4=DR, 5=Down, 6=DL, 
+                              7=Left (+=Clockwise) Matches StateGridStatus */
+    size_t total_nutrients; ///< Number of nutrients (edge or normal) on this map 
 
     MapData() : total_nutrients(0){;} 
     MapData(emp::StateGrid& _grid, size_t _total_nutrients) 
@@ -125,6 +130,21 @@ namespace mabe {
           }
         }
       }
+      if(!map_data.grid.HasMetadata("start_facing")){
+        emp_error("Error! Map does not have metadata \"start_facing\"!");
+      }
+      map_data.start_facing = 
+          static_cast<int>(map_data.grid.GetMetadata("start_facing").AsDouble());
+      if(!map_data.grid.HasMetadata("start_x")){
+        emp_error("Error! Map does not have metadata \"start_x\"!");
+      }
+      map_data.start_x = 
+          static_cast<int>(map_data.grid.GetMetadata("start_x").AsDouble());
+      if(!map_data.grid.HasMetadata("start_y")){
+        emp_error("Error! Map does not have metadata \"start_y\"!");
+      }
+      map_data.start_y = 
+          static_cast<int>(map_data.grid.GetMetadata("start_y").AsDouble());
       std::cout << "Map #" << (map_data_vec.size() - 1) << " is " 
         << map_data.grid.GetWidth() << "x" << map_data.grid.GetHeight() << ", with " 
         << map_data.total_nutrients << " total nutrients!" << std::endl;
@@ -148,9 +168,9 @@ namespace mabe {
       state.visited_tiles.Resize(map_data.grid.GetSize()); 
       state.visited_tiles.Clear();
       state.status.Set(
-        map_data.grid.GetWidth() / 2,
-        map_data.grid.GetHeight() / 2,
-        3
+        map_data.start_x,
+        map_data.start_y,
+        map_data.start_facing 
       );
       state.raw_score = 0;
     }
