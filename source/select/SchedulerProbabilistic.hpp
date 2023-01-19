@@ -133,6 +133,7 @@ namespace mabe {
         if(total_weight > 0.0){ // TODO: cap to max weight
           selected_idx = weight_map.Index(random.GetDouble() * total_weight);
         }
+        // TODO: Handle the case where we have < 0 total weight AND empty orgs in population
         else selected_idx = random.GetUInt(pop.GetSize()); // No weights -> pick randomly 
         pop[selected_idx].ProcessStep();
         if(death_age >= 0){

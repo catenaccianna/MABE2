@@ -63,6 +63,7 @@ namespace mabe {
                               0=UL, 1=Up, 2=UR, 3=Right, 4=DR, 5=Down, 6=DL, 
                               7=Left (+=Clockwise) Matches StateGridStatus */
     size_t total_nutrients; ///< Number of nutrients (edge or normal) on this map 
+    double merit_exp_max; ///< On this map, merit will cap at 2^(this value)
 
     MapData() : total_nutrients(0){;} 
     MapData(emp::StateGrid& _grid, size_t _total_nutrients) 
@@ -98,7 +99,14 @@ namespace mabe {
       return state.raw_score / map_data_vec[state.cur_map_idx].total_nutrients;
     }
     double GetExponentialScore(PatchHarvestState& state) const{
+      if(state.raw_score < 0) return 0;
       return std::pow(score_exp_base, state.raw_score);
+    }
+    double GetNormalizedExponentialScore(PatchHarvestState& state) const{
+      // Avida2 style
+      if(state.raw_score < 0) return 0;
+      const MapData& path = GetCurPath(state);
+      return std::pow(score_exp_base, path.merit_exp_max * (state.raw_score / path.total_nutrients));
     }
 
     /// Load a single map for the path following task
@@ -145,6 +153,11 @@ namespace mabe {
       }
       map_data.start_y = 
           static_cast<int>(map_data.grid.GetMetadata("start_y").AsDouble());
+      if(!map_data.grid.HasMetadata("merit_exp_max")){
+        emp_error("Error! Map does not have metadata \"merit_exp_max\"!");
+      }
+      map_data.merit_exp_max = 
+          static_cast<int>(map_data.grid.GetMetadata("merit_exp_max").AsDouble());
       std::cout << "Map #" << (map_data_vec.size() - 1) << " is " 
         << map_data.grid.GetWidth() << "x" << map_data.grid.GetHeight() << ", with " 
         << map_data.total_nutrients << " total nutrients!" << std::endl;
@@ -220,7 +233,7 @@ namespace mabe {
       double score = GetCurrentPosScore(state);
       state.raw_score += score;
       if(verbose) std::cout << "Score: " << state.raw_score << std::endl;
-      return GetExponentialScore(state);
+      return GetNormalizedExponentialScore(state);
     }
     
     /// Rotate the organism clockwise by 45 degrees

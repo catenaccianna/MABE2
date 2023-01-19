@@ -31,6 +31,8 @@ SchedulerProbabilistic scheduler { // Rations out updates to organisms based on 
   death_age = 50;               // Organisms die from old age after executing 
                                 // death_age * genome length instructions. 
                                 // -1 for no death from old age
+  insts_executed_trait = "insts_executed"; 
+                                // The number of instructions this organism has executed
 };
 VirtualCPU_Inst_Nop inst_lib_nop { // Nop instructions for VirtualCPUOrg
   target_pop = "main_pop";      // Population(s) to manage.
@@ -61,16 +63,19 @@ VirtualCPU_Inst_Replication inst_lib_repl { // Replication instructions for Virt
                                   // instructions do nothing. 
                                   // Overruled by `req_count_inst_executed`
 };
-EvalPatchHarvest patch_harvest {      // Evaluate organisms on their ability to follow a path.
-  target_pop = "main_pop";            // Which population(s) should we evaluate?
+EvalPatchHarvest patch_harvest {  // Evaluate organisms on their ability to follow a path.
+  target_pop = "main_pop";        // Which population(s) should we evaluate?
   score_trait = "child_merit";    // Which trait stores path following performance?
   state_trait = "state";          // Which trait stores organisms' path follow state?
-  movement_trait = "movements";
-  map_idx_trait = "map_idx";
-  map_filenames = "../settings/EvalPatchHarvest/test_map_4.txt"; 
-  score_exp_base = 2.0;         // Base of the merit exponential. Merit = this^score.
+  movement_trait = "movements";   // Which trait will store a string containing the organism's
+                                  //    sequence of moves?
+  map_idx_trait = "map_idx";      // Which trait will store the index of the current map?
+  map_filenames = "../settings/EvalPatchHarvest/test_map_0.txt;../settings/EvalPatchHarvest/test_map_1.txt;../settings/EvalPatchHarvest/test_map_2.txt;../settings/EvalPatchHarvest/test_map_3.txt"; 
+                                  // List of map files to load, separated by semicolons(;)
+  score_exp_base = 2.0;           // Base of the merit exponential. Merit = this^score.
+  track_movement = 0;             // If true (1), track every move or turn the organism 
+                                  //    performs
   verbose = 0;
-                                // List of map files to load, separated by semicolons(;)
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
   site_point_mut_prob = 0.0075; // Per-site probability of a point mutations
@@ -102,6 +107,7 @@ VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
                                   // nops to fully define the registers used
   copy_influences_merit = 0;    // If true, the number of instructions copied (e.g., via 
                                   // HCopy instruction)factor into offspring merit
+  insts_executed_trait = "insts_executed"; // Name of the trait that holds the number of instructions executed
 };
 AnalyzeSystematics sys{
   data_file_name = "phylo/phylogenetic_data.csv";// Filename for systematics data file.
@@ -127,18 +133,18 @@ max_file.ADD_COLUMN("merit",       "best_org.TRAIT('child_merit')" );
 max_file.ADD_COLUMN("merit_given", "best_org.TRAIT('merit')" );
 max_file.ADD_COLUMN("gen", "best_org.TRAIT('generation')" );
 max_file.ADD_COLUMN("genome", "best_org.TRAIT('genome')" );
-max_file.ADD_COLUMN("movements", "best_org.TRAIT('movements')" );
+//max_file.ADD_COLUMN("movements", "best_org.TRAIT('movements')" );
 max_file.ADD_COLUMN("map_idx", "best_org.TRAIT('map_idx')" );
 
-DataFile pop_file { filename="pop_structure.txt"; };
-Var pop_structure;
-pop_file.ADD_SETUP("pop_structure = main_pop.GET_AS_STRING()");
-pop_file.ADD_COLUMN("pop", "pop_structure");
+//DataFile pop_file { filename="pop_structure.txt"; };
+//Var pop_structure;
+//pop_file.ADD_SETUP("pop_structure = main_pop.GET_AS_STRING()");
+//pop_file.ADD_COLUMN("pop", "pop_structure");
 
 @START() {
   PRINT("random_seed = ", random_seed, "\n");  // Print seed at run start.
   main_pop.INJECT("avida_org", 1);             // Inject ancestor organism 
-  main_pop.SET_GENOME(0, "rcIcccFcGnccJcFcFcmncDcmccczcFApwcwOchNLccccccuFE");
+  //main_pop.SET_GENOME(0, "IIcFGnccgFFFFMcdmcFFFpacEFObNNcdGO");
 };
 
 Var avg_gen; 
@@ -162,4 +168,3 @@ Var avg_gen;
   IF(avg_gen >= max_gens) EXIT();
   IF(ud >= max_updates) EXIT();
 };
-
