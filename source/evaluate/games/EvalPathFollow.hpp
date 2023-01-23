@@ -338,6 +338,8 @@ namespace mabe {
     std::string path_tiles_visited_trait = "path_tiles_visited"; 
     /// Name of the trait that holds the number of movements made onto non-path tiles
     std::string moves_off_path_trait = "moves_off_path"; 
+    /// Name of the trait that holds the index of the map the organism is on 
+    std::string map_idx_trait = "map_idx"; 
     std::string map_filenames="";      ///< ;-separated list map filenames to load.
     PathFollowEvaluator evaluator;     /**< The evaluator that does all of the actually 
                                             computing and bookkeeping for the path follow 
@@ -372,10 +374,12 @@ namespace mabe {
           "Base of the exponential used to calculate an organism's score");
       LinkVar(evaluator.verbose, "verbose", 
            "Should we print extra info?");
-      LinkVar(path_tiles_visited_trait, "path_tiles_visited_trait_name", 
+      LinkVar(path_tiles_visited_trait, "path_tiles_visited_trait", 
           "Name of the trait storing the number of unique path tiles the org has visited");
-      LinkVar(moves_off_path_trait, "moves_off_path_trait_name", 
+      LinkVar(moves_off_path_trait, "moves_off_path_trait", 
           "Name of the trait storing the number of times the org moved onto a non-path tile");
+      LinkVar(map_idx_trait, "map_idx_trait", 
+          "Name of the trait storing the map the organism is being evaluated on");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
@@ -386,6 +390,8 @@ namespace mabe {
           "Number of unique path tiles the organism has visited", { }); 
       AddOwnedTrait<size_t>(moves_off_path_trait, 
           "Number of times the organism has moved onto a non-path tile", { }); 
+      AddOwnedTrait<size_t>(map_idx_trait, 
+          "Index of the map the organism is being evaluated on", { }); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
     }
@@ -402,6 +408,7 @@ namespace mabe {
             hw.SetTrait<double>(score_trait, score);
             hw.SetTrait<size_t>(path_tiles_visited_trait, state.unique_path_tiles_visited);
             hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-move", func_move);
@@ -414,6 +421,7 @@ namespace mabe {
             hw.SetTrait<double>(score_trait, score);
             hw.SetTrait<size_t>(path_tiles_visited_trait, state.unique_path_tiles_visited);
             hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
+            hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-move-back", func_move_back);

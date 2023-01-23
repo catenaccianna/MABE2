@@ -54,6 +54,11 @@ EvalPathFollow path_follow {      // Evaluate organisms on their ability to foll
   map_filenames = "../settings/EvalPathFollow/test_map.txt"; 
                                 // List of map files to load, separated by semicolons(;)
   randomize_cues = 1;           // If true, cues are assigned random values in for each new path
+  // Name of the trait storing the number of unique path tiles the org has visited
+  path_tiles_visited_trait = "path_tiles_visited";
+  // Name of the trait storing the number of times the org moved onto a non-path tile
+  moves_off_path_trait = "moves_off_path";
+  map_idx_trait = "map_idx";    // Index of the map the organism is on
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
   site_point_mut_prob = 0.0075; // Per-site probability of a point mutations
@@ -112,6 +117,7 @@ max_file.ADD_COLUMN("merit_given",    "best_org.TRAIT('merit')" );
 max_file.ADD_COLUMN("gen",            "best_org.TRAIT('generation')" );
 max_file.ADD_COLUMN("path_tiles",     "best_org.TRAIT('path_tiles_visited')" );
 max_file.ADD_COLUMN("moves_off_path", "best_org.TRAIT('moves_off_path')" );
+max_file.ADD_COLUMN("map_idx",        "best_org.TRAIT('map_idx')" );
 
 @START() {
   PRINT("random_seed = ", random_seed, "\n");  // Print seed at run start.
