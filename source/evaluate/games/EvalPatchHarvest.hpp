@@ -30,6 +30,8 @@ namespace mabe {
     emp::StateGridStatus status;  ///< Stores position, direction, and interfaces with grid 
     double raw_score;             /**< Number of unique valid tiles visited minus the number
                                        of steps taken off the path (not unique) */
+    size_t nutrients_consumed = 0;///< Number of unique nutrient positions visited by org
+    size_t moves_off_path = 0;    ///< Number of movements org made into empty tiles
 
     PatchHarvestState(): initialized(false), cur_map_idx(0), visited_tiles(), status(),
         raw_score(0) { ; }
@@ -186,6 +188,8 @@ namespace mabe {
         map_data.start_facing 
       );
       state.raw_score = 0;
+      state.nutrients_consumed = 0;
+      state.moves_off_path = 0;
     }
     
     /// Fetch the data of the state's current path
@@ -231,6 +235,8 @@ namespace mabe {
       if(verbose) std::cout << "[HARVEST] move" << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
+      if(score == 1) state.nutrients_consumed++;
+      else if(score == -1) state.moves_off_path++;
       state.raw_score += score;
       if(verbose) std::cout << "Score: " << state.raw_score << std::endl;
       return GetNormalizedExponentialScore(state);
@@ -287,6 +293,10 @@ namespace mabe {
     std::string map_filenames="";           ///< ;-separated list map filenames to load
     std::string movement_trait="movements"; ///< Trait holding all org movements 
     std::string map_idx_trait="map_idx";    ///< Trait holding the index of the current map
+    /// Trait holding the number of unique nutrient tiles the organism has entered
+    std::string nutrients_consumed_trait = "nutrients_consumed";
+    /// Trait holding the number of movements the organism has made onto empty tiles
+    std::string moves_off_path_trait = "moves_off_path";
     bool track_movement = true;             /**< If true, track every move or turn the 
                                                   organism performs **/
     PatchHarvestEvaluator evaluator;        /**< The evaluator that does all of the actually 
@@ -320,6 +330,10 @@ namespace mabe {
           "Which trait will store a string containing the organism's sequence of moves?");
       LinkVar(map_idx_trait, "map_idx_trait", 
           "Which trait will store the index of the current map?");
+      LinkVar(nutrients_consumed_trait, "nutrients_consumed_trait", 
+          "Which trait will store the number of nutrients the organism has consumed?");
+      LinkVar(moves_off_path_trait, "moves_off_path_trait", 
+          "Which trait will store the number of times the org moved into an empty cell?");
       LinkVar(evaluator.verbose, "verbose", 
           "If true (1), prints extra information about the organisms actions");
       LinkVar(evaluator.score_exp_base, "score_exp_base", 
@@ -332,10 +346,14 @@ namespace mabe {
     void SetupModule() override {
       AddSharedTrait<double>(score_trait, "Path following score", 0.0);
       AddOwnedTrait<PatchHarvestState>(state_trait, "Organism's patch harvest state", { }); 
+      AddOwnedTrait<size_t>(nutrients_consumed_trait, 
+          "Number of unique nutrient tiles the organism has visited", 0); 
+      AddOwnedTrait<size_t>(moves_off_path_trait, 
+          "Number of times organism has moved onto an empty tile", 0); 
       if(track_movement){
         AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
       }
-      AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", { }); 
+      AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", 0); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
     }
@@ -350,6 +368,8 @@ namespace mabe {
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             double score = evaluator.Move(state);
             hw.SetTrait<double>(score_trait, score);
+            hw.SetTrait<size_t>(nutrients_consumed_trait, state.nutrients_consumed);
+            hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
             if(track_movement){
               hw.SetTrait<std::string>(movement_trait, 
                   hw.GetTrait<std::string>(movement_trait) + "M");
