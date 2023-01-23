@@ -216,7 +216,7 @@ namespace mabe {
     //
     // Note: While it sounds like this should be a const method, it is possible this is the
     //  organism's first interaction with the path, so we may need to initialize it
-    uint32_t Sense(PatchHarvestState& state) { 
+    int32_t Sense(PatchHarvestState& state) { 
       if(!state.initialized) InitializeState(state);
       switch(state.status.Scan(GetCurPath(state).grid)){
         case Tile::EMPTY:
@@ -338,7 +338,7 @@ namespace mabe {
         inst_func_t func_sense = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& inst){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
-            uint32_t val = evaluator.Sense(state);
+            int32_t val = evaluator.Sense(state);
             size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
             hw.regs[reg_idx] = val;
             if(!inst.nop_vec.empty()) hw.AdvanceIP(1);

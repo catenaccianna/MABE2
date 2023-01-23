@@ -38,17 +38,17 @@ namespace mabe {
     emp::StateGridStatus status;  ///< Stores position, direction, and interfaces with grid 
     double raw_score;             /**< Number of unique valid tiles visited minus the number
                                        of steps taken off the path (not unique) */
-    uint32_t empty_cue;           /**< Value of empty cues for this state, potentially 
+    int32_t empty_cue;           /**< Value of empty cues for this state, potentially 
                                        randomized depending on the configuration options */
-    uint32_t forward_cue;         /**< Value of forward cues for this state, potentially 
+    int32_t forward_cue;         /**< Value of forward cues for this state, potentially 
                                        randomized depending on the configuration options */
-    uint32_t left_cue;            /**< Value of left turn cues for this state, potentially 
+    int32_t left_cue;            /**< Value of left turn cues for this state, potentially 
                                        randomized depending on the configuration options */
-    uint32_t right_cue;           /**< Value of right turn cues for this state, potentially 
+    int32_t right_cue;           /**< Value of right turn cues for this state, potentially 
                                        randomized depending on the configuration options */
 
     PathFollowState(): initialized(false), cur_map_idx(0), visited_tiles(), status(),
-        raw_score(0), empty_cue(1), forward_cue(2), left_cue(3), right_cue(4) { ; }
+        raw_score(0), empty_cue(-1), forward_cue(0), left_cue(1), right_cue(2) { ; }
     
     PathFollowState(const PathFollowState&){ // Ignore copy, just prep to initialize
       raw_score = 0;
@@ -215,21 +215,16 @@ namespace mabe {
       );
       state.raw_score = 0;
       if(randomize_cues){
-        state.forward_cue = 1;//rand.GetUInt();
-        state.right_cue = rand.GetUInt();
+        state.empty_cue = -1;
+        state.forward_cue = 0;
+        state.right_cue = rand.GetInt(1,1000000);
         while(state.right_cue == state.forward_cue){
-          state.right_cue = rand.GetUInt();
+          state.right_cue = rand.GetInt(1,1000000);
         }
-        state.left_cue = rand.GetUInt();
+        state.left_cue = rand.GetInt(1,1000000);
         while(state.left_cue == state.forward_cue || state.left_cue == state.right_cue){
-          state.left_cue = rand.GetUInt();
+          state.left_cue = rand.GetInt(1,1000000);
         }
-        state.empty_cue = 0;//rand.GetUInt();
-        //while(state.empty_cue == state.forward_cue || 
-        //    state.empty_cue == state.right_cue || 
-        //    state.empty_cue == state.left_cue){
-        //  state.empty_cue = rand.GetUInt();
-        //}
       }
     }
     
@@ -291,7 +286,7 @@ namespace mabe {
     //
     // Note: While it sounds like this should be a const method, it is possible this is the
     //  organism's first interaction with the path, so we may need to initialize it
-    uint32_t Sense(PathFollowState& state) { 
+    int32_t Sense(PathFollowState& state) { 
       if(!state.initialized) InitializeState(state);
       switch(state.status.Scan(GetCurPath(state).grid)){
         case Tile::EMPTY:
@@ -413,7 +408,7 @@ namespace mabe {
       { // Sense 
         inst_func_t func_sense = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& inst){
-            uint32_t val = evaluator.Sense(hw.GetTrait<PathFollowState>(state_trait));
+            int32_t val = evaluator.Sense(hw.GetTrait<PathFollowState>(state_trait));
             size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
             hw.regs[reg_idx] = val;
           };

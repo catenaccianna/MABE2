@@ -62,7 +62,7 @@ namespace mabe {
 
   /// \brief State of a single organism's progress on the doors task
   struct DoorsState{
-    using data_t = uint32_t;
+    using data_t = int32_t;
 
     bool initialized = false;     ///< Flag indicating if this state has been initialized
     size_t last_room_cue;         ///< Cue of the last "door room" 
@@ -117,6 +117,7 @@ namespace mabe {
     double incorrect_doors_step = 0.0; ///< Step value, the penalty for each wrong door increases by this amount 
     protected:
     emp::Random& rand;  ///< Reference to the main random number generator of MABE
+    emp::vector<bool> is_cue_random_vec; ///< If index is true, that cue is random 
     emp::vector<int> starting_cue_vec; /**< Vector of set cue values or random cue 
                                             indicators (-1) */ 
     emp::vector<emp::vector<size_t>> path_start_pattern_vec; /**< Users can define multiple 
@@ -196,15 +197,23 @@ namespace mabe {
       // Remove all trailing ;
       while(s[s.length() - 1] == ';') s = s.substr(0, s.length() - 1); 
       starting_cue_vec.clear();
+      is_cue_random_vec.clear();
       emp::vector<std::string> sliced_str_vec;
       emp::slice(s, sliced_str_vec, ';');
       std::cout << "Eval doors starting cue values: " << std::endl << "\t"; 
       for(std::string& slice : sliced_str_vec){
-        const int cue = std::stoi(slice);
-        if(cue < -1) emp_error("Error! ParseCues expects values of -1 or greater!");
-        if(cue == -1) std::cout << "[random] ";
-        else std::cout << "[set: " << cue << "] ";
-        starting_cue_vec.push_back(cue);
+        if(slice == "r" || slice == "rand" || slice == "random"){
+          starting_cue_vec.push_back(0);
+          is_cue_random_vec.push_back(true);
+          std::cout << "[random] ";
+          continue;
+        }
+        else{
+          const int cue = std::stoi(slice);
+          starting_cue_vec.push_back(cue);
+          is_cue_random_vec.push_back(false);
+          std::cout << "[set: " << cue << "] ";
+        }
       }
       std::cout << std::endl;
     }
@@ -276,17 +285,15 @@ namespace mabe {
       state.cue_vec.resize(GetNumDoors());
       // First pass, add all set cues 
       for(size_t idx = 0; idx < GetNumDoors(); ++idx){
-        if(starting_cue_vec[idx] >= 0){
-          state.cue_vec[idx] = starting_cue_vec[idx];
-        }
+        if(!is_cue_random_vec[idx]) state.cue_vec[idx] = starting_cue_vec[idx];
       }
       // Second pass, randomize other cues
       for(size_t idx = 0; idx < GetNumDoors(); ++idx){
-        if(starting_cue_vec[idx] == -1){
+        if(is_cue_random_vec[idx]){
           bool pass = false;
           while(!pass){
             pass = true;
-            state.cue_vec[idx] = rand.GetUInt();
+            state.cue_vec[idx] = rand.GetInt(1,1000000);
             // Ensure we didn't choose an existing cue
             for(size_t idx_2 = 0; idx_2 < GetNumDoors(); ++idx_2){
               if(idx != idx_2 && state.cue_vec[idx] == state.cue_vec[idx_2]){
@@ -355,7 +362,7 @@ namespace mabe {
   /// \brief MABE module that evaluates Avida-esque organisms on how well they can associate cues to doors 
   class EvalDoors : public Module {
   public:
-    using data_t = uint32_t;
+    using data_t = int32_t;
     using org_t = VirtualCPUOrg;
     using inst_func_t = org_t::inst_func_t;
 
@@ -513,7 +520,7 @@ namespace mabe {
       }
       { // Sense 
         inst_func_t func_sense = [this](org_t& hw, const org_t::inst_t& inst){
-          uint32_t val = evaluator.Sense(hw.GetTrait<DoorsState>(trait_names.state_trait));
+          int32_t val = evaluator.Sense(hw.GetTrait<DoorsState>(trait_names.state_trait));
           size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
           hw.regs[reg_idx] = val;
           if(!inst.nop_vec.empty()) hw.AdvanceIP(1);
