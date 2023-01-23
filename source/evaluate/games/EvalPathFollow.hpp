@@ -38,6 +38,8 @@ namespace mabe {
     emp::StateGridStatus status;  ///< Stores position, direction, and interfaces with grid 
     double raw_score;             /**< Number of unique valid tiles visited minus the number
                                        of steps taken off the path (not unique) */
+    size_t unique_path_tiles_visited; ///< Number of unique path tiles visited
+    size_t moves_off_path;            ///< Number of times org stepped onto non-path tile
     int32_t empty_cue;           /**< Value of empty cues for this state, potentially 
                                        randomized depending on the configuration options */
     int32_t forward_cue;         /**< Value of forward cues for this state, potentially 
@@ -48,7 +50,8 @@ namespace mabe {
                                        randomized depending on the configuration options */
 
     PathFollowState(): initialized(false), cur_map_idx(0), visited_tiles(), status(),
-        raw_score(0), empty_cue(-1), forward_cue(0), left_cue(1), right_cue(2) { ; }
+        raw_score(0), empty_cue(-1), unique_path_tiles_visited(0), moves_off_path(0), 
+        forward_cue(0), left_cue(1), right_cue(2) { ; }
     
     PathFollowState(const PathFollowState&){ // Ignore copy, just prep to initialize
       raw_score = 0;
@@ -214,6 +217,8 @@ namespace mabe {
         path_data_vec[state.cur_map_idx].start_facing
       );
       state.raw_score = 0;
+      state.unique_path_tiles_visited = 0;
+      state.moves_off_path = 0;
       if(randomize_cues){
         state.empty_cue = -1;
         state.forward_cue = 0;
@@ -263,6 +268,12 @@ namespace mabe {
       if(verbose) std::cout << "[PATH_FOLLOW] move " << scale_factor << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
+      if(score == 1){
+        state.unique_path_tiles_visited++; 
+      }
+      else if(score == -1){
+        state.moves_off_path++;
+      }
       MarkVisited(state);
       state.raw_score += score;
       return GetExponentialScore(state);
@@ -323,6 +334,10 @@ namespace mabe {
   private:
     std::string score_trait = "score"; ///< Name of trait for organism performance
     std::string state_trait ="state";  ///< Name of trait that stores the path follow state
+    /// Name of the trait that holds the number of unique path tiles visited
+    std::string path_tiles_visited_trait = "path_tiles_visited"; 
+    /// Name of the trait that holds the number of movements made onto non-path tiles
+    std::string moves_off_path_trait = "moves_off_path"; 
     std::string map_filenames="";      ///< ;-separated list map filenames to load.
     PathFollowEvaluator evaluator;     /**< The evaluator that does all of the actually 
                                             computing and bookkeeping for the path follow 
@@ -357,12 +372,20 @@ namespace mabe {
           "Base of the exponential used to calculate an organism's score");
       LinkVar(evaluator.verbose, "verbose", 
            "Should we print extra info?");
+      LinkVar(path_tiles_visited_trait, "path_tiles_visited_trait_name", 
+          "Name of the trait storing the number of unique path tiles the org has visited");
+      LinkVar(moves_off_path_trait, "moves_off_path_trait_name", 
+          "Name of the trait storing the number of times the org moved onto a non-path tile");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
     void SetupModule() override {
       AddSharedTrait<double>(score_trait, "Path following score", 0.0);
       AddOwnedTrait<PathFollowState>(state_trait, "Organism's path follow state", { }); 
+      AddOwnedTrait<size_t>(path_tiles_visited_trait, 
+          "Number of unique path tiles the organism has visited", { }); 
+      AddOwnedTrait<size_t>(moves_off_path_trait, 
+          "Number of times the organism has moved onto a non-path tile", { }); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
     }
@@ -374,8 +397,11 @@ namespace mabe {
       { // Move
         inst_func_t func_move = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
-            double score = evaluator.Move(hw.GetTrait<PathFollowState>(state_trait));
+            PathFollowState& state = hw.GetTrait<PathFollowState>(state_trait);
+            double score = evaluator.Move(state);
             hw.SetTrait<double>(score_trait, score);
+            hw.SetTrait<size_t>(path_tiles_visited_trait, state.unique_path_tiles_visited);
+            hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-move", func_move);
@@ -383,8 +409,11 @@ namespace mabe {
       { // Move backward
         inst_func_t func_move_back = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
-            double score = evaluator.Move(hw.GetTrait<PathFollowState>(state_trait), -1);
+            PathFollowState& state = hw.GetTrait<PathFollowState>(state_trait);
+            double score = evaluator.Move(state, -1);
             hw.SetTrait<double>(score_trait, score);
+            hw.SetTrait<size_t>(path_tiles_visited_trait, state.unique_path_tiles_visited);
+            hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
             "sg-move-back", func_move_back);
