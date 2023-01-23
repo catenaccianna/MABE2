@@ -51,8 +51,11 @@ namespace mabe {
         if(input_vec.size() < num_inputs){
           for(size_t idx = input_vec.size(); idx < num_inputs; idx++){
             data_t rand_num = 
-                (data_t)(std::numeric_limits<data_t>::max() * control.GetRandom().GetDouble()) ;
-            input_vec.push_back((rand_num << 8) | stamp_vec[idx]);
+                static_cast<data_t>(std::numeric_limits<data_t>::max() * 
+                    control.GetRandom().GetDouble()) ;
+            // Mask off lower 8 bits and replace them with stamped bits to prevent logic tasks
+            //    from overlapping
+            input_vec.push_back((rand_num & 0xFFFFFF0) | stamp_vec[idx]);
           }
         }
         size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
