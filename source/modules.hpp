@@ -61,3 +61,6 @@
 #include "orgs/instructions/VirtualCPU_Inst_Manipulation.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Replication.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Dictionary.hpp"
+
+// Tools
+#include "tools/MutantGenerator.hpp"
