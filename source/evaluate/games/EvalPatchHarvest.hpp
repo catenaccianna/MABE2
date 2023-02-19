@@ -117,6 +117,8 @@ namespace mabe {
       // Create our MapData to be filled
       map_data_vec.emplace_back();
       MapData& map_data = *(map_data_vec.rbegin()); 
+      // Ensure map is toroidal (important for maps with multiple patches)
+      map_data.grid.SetIsToroidal(true);
       // Set up the possible tile types for the grid (we ignore the score value)
       map_data.grid.AddState(Tile::EMPTY,       'o', 1.0, "empty");
       map_data.grid.AddState(Tile::NUTRIENT,    'N', 1.0, "nutrient");
