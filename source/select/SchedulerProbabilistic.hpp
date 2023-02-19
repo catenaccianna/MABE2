@@ -170,11 +170,17 @@ namespace mabe {
       }
     }
 
-    /// When an organism dies, set its weight to zero
+    /// When an organism dies, set its weight to zero and refresh weights
+    ///
+    /// In some situations, an organisms can have HUGE fitness scores.
+    /// In the case that only one organism has such a high score and then that organism dies, 
+    ///     we need to make sure the other (much much lower score) are not zeroed out due to 
+    ///     floating point imprecision
     void BeforeDeath(OrgPosition death_pos) override{
         size_t org_idx = death_pos.Pos();
         emp_assert(org_idx < weight_map.GetSize());
         weight_map.Adjust(org_idx, 0);
+        weight_map.DeferRefresh();
     }
 
     void BeforeRepro(OrgPosition parent_pos) override{
