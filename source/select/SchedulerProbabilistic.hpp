@@ -168,6 +168,7 @@ namespace mabe {
         else weight_map.Adjust(org_idx, full_val);
         placement_pos.Pop()[org_idx].SetTrait<bool>(reset_self_trait, false);
       }
+      weight_map.DeferRefresh();
     }
 
     /// When an organism dies, set its weight to zero and refresh weights
@@ -177,10 +178,10 @@ namespace mabe {
     ///     we need to make sure the other (much much lower score) are not zeroed out due to 
     ///     floating point imprecision
     void BeforeDeath(OrgPosition death_pos) override{
-        size_t org_idx = death_pos.Pos();
-        emp_assert(org_idx < weight_map.GetSize());
-        weight_map.Adjust(org_idx, 0);
-        weight_map.DeferRefresh();
+      size_t org_idx = death_pos.Pos();
+      emp_assert(org_idx < weight_map.GetSize());
+      weight_map.Adjust(org_idx, 0);
+      weight_map.DeferRefresh();
     }
 
     void BeforeRepro(OrgPosition parent_pos) override{
@@ -191,6 +192,7 @@ namespace mabe {
         const double full_val = base_value + (trait_val * merit_scale_factor);
         pop[org_idx].SetTrait<double>(trait, full_val);
         weight_map.Adjust(org_idx, full_val);
+        weight_map.DeferRefresh();
       }
     }
   };
