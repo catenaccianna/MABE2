@@ -249,6 +249,12 @@ namespace mabe {
             return str;
           },
           "Get the string representation of the organism at the given index");
+      info.AddMemberFunction("IS_INDEX_EMPTY", 
+          [](Population & target, size_t index) {
+            return target.IsEmpty(index);
+          },
+          "Returns whether the given index in the population is empty "
+          "(does not contain an organism)");
     }
 
 
