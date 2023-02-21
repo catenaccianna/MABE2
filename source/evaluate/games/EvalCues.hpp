@@ -193,8 +193,8 @@ namespace mabe {
         emp::slice(pattern, index_str_vec, ',');
         for(std::string& index_str : index_str_vec){
           const size_t index = std::stoull(index_str);
-          if(index == 0){
-            emp_error("Error! ParsePathStartPatterns expects values of 1 or greater!");
+          if(index < 0){
+            emp_error("Error! ParsePathStartPatterns expects values of 0 or greater!");
           }
           else if (index >= starting_cue_vec.size()){
             emp_error("Error! ParsePathStartPatterns received an index greater than (or "
