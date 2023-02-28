@@ -14,7 +14,8 @@
 #include "../core/Module.hpp"
 #include "../core/data_collect.hpp"
 
-#include "../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
+//#include "../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
+#include "../../../../../Desktop/working_dbg/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
 
 namespace mabe {
 
@@ -23,6 +24,7 @@ namespace mabe {
   /// Function of module.
     double probability; // Probability that the genome of an organism is modified with the DBGraph before it mutates
     bool count_kmers; // If true, a kmer in the DBGraph can only be used the same number of times it appears in the pangenome
+    bool variable_length; // If true, genomes are not required to have a fixed size/length. Free range genomes.
     DeBruijnGraph pangenome_graph; // DeBruijn Graph storing pangenome
 
   /// Datafile variables
@@ -37,9 +39,9 @@ namespace mabe {
     AnalyzePangenome(mabe::MABE & control,
           const std::string & name="AnalyzePangenome",
           const std::string & desc="Module to generate a random new genetic sequence based on existing pangenome",
-          double _probability=1, bool _count_kmers=1)
+          double _probability=1, bool _count_kmers=1, bool _variable_length=0)
       : Module(control, name, desc)
-      , probability(_probability), count_kmers(_count_kmers)
+      , probability(_probability), count_kmers(_count_kmers), variable_length(_variable_length)
       , data(""), count(0), from(""), to("")
     {
       SetAnalyzeMod(true);
@@ -57,10 +59,10 @@ namespace mabe {
       std::cout<< " setup config ";
       LinkVar(probability, "probability", "Probability that the genome of an organism is modified with the DBGraph before it mutates.");
       LinkVar(count_kmers, "count_kmers", "If true, a kmer in the DBGraph can only be used the same number of times it appears in the pangenome.");
+      LinkVar(variable_length, "variable_length", "If true, genomes are not required to have a fixed size/length.");
     }
 
     void SetupModule() override {
-      std::cout<< " setup mod ";
       data = emp::DataFile("DeBruijnGraph.csv");
 
       data.AddFun<string>([this]()
@@ -107,45 +109,62 @@ namespace mabe {
       }      
     }
 
-    void BeforePlacement(Organism & bit_org, OrgPosition pos, OrgPosition parent_pos) override {
-      pangenome_graph.add_sequence(bit_org.ToString());
+    void BeforePlacement(Organism & org, OrgPosition pos, OrgPosition parent_pos) override {
+      pangenome_graph.add_sequence(org.ToString());
     }
 
-    void BeforeMutate(Organism & bit_org) override {
+    void BeforeMutate(Organism & org) override {
       std::cout<< " mutate ";
-      bit_org.GenerateOutput();
-      std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
+      org.GenerateOutput();
+      std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
       // modify the organism & do the actual crossover
       string new_genome;
       if(count_kmers){
-        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 1, 0);
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, 1, 0);
       }
       else{
-        new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 0, 0);
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, 0, 0);
       }
-      bit_org.GenomeFromString(new_genome); //pass in organism reference and change its genome
-      bit_org.GenerateOutput();
-      std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
+      org.GenomeFromString(new_genome); //pass in organism reference and change its genome
+      org.GenerateOutput();
+      std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
     }
+
+    // bool Crossover(Collection & orgs) {
+      // std::cout<<" crossover ";
+      // string new_genome;
+      // for (Organism & org : orgs) {
+                                              //initial fitness & genome
+                                              ///////// org.calculate ouputs to update fitness
+        // std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
+        // std::cout << org.ToString()<<std::endl;
+        // 
+        // if(count_kmers){                        //call DeBruijnGraph modification
+          // new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, 1, 0);
+        // }
+        // else{ // (just a couple different ways of using DBGraph)
+          // new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, 0, 0);
+        // }
+        // org.GenomeFromString(new_genome); //change organism's genome to new string
+                                           //fitness value post-DBGraph modification
+        // std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
+        // std::cout << org.ToString()<<std::endl;
+        // 
+      // }
+      // return true; // @note selectTournament returns collection, evalNK returns double, what do i return??
+    // }
 
     bool Crossover(Collection & orgs) {
       string new_genome;
-      for (Organism & bit_org : orgs) {
-                                              // initial fitness & genome
-        std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
-        std::cout << bit_org.ToString()<<std::endl;
-        
-        if(count_kmers){                        //call DeBruijnGraph modification
-          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 1, 0);
-        }
-        else{ // (just a couple different ways of using DBGraph)
-          new_genome = pangenome_graph.modify_org(control.GetRandom(), bit_org.ToString(), probability, 0, 0);
-        }
-        bit_org.GenomeFromString(new_genome); //change organism's genome to new string
+      mabe::Collection avlive_org (orgs.GetAlive());
+      for (Organism & org : avlive_org) {
+        // initial fitness & genome
+        // generate new genome from DeBruijn Graph
+        new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, count_kmers, variable_length);
+        std::cout<<"NEW GENOME "<<new_genome<<"\n[replace genome]\n\n";
+        org.GenomeFromString(new_genome); //change organism's genome to new string
                                            //fitness value post-DBGraph modification
-        std::cout<< bit_org.GetTraitAsDouble(bit_org.GetTraitID("fitness"))<<" ";
-        std::cout << bit_org.ToString()<<std::endl;
-        
+        std::cout<<"New genome modification "<<org.ToString()<<std::endl;
       }
       return true; // @note selectTournament returns collection, evalNK returns double, what do i return??
     }
