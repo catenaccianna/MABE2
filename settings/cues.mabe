@@ -1,19 +1,11 @@
 random_seed = 0;                // Seed for random number generator; use 0 to base on time.
 Population main_pop;            // Collection of organisms
 Var pop_size = 3600;            // Local value variable.
-Var max_gens = 1000000;         // Local value variable.
-Var max_updates = 200000;       // Local value variable.
+Var max_gens = 200;             // Local value variable.
 Var do_multiply = 1;            // Local value variable.
-//MaxSizePlacement place_max_size { // Grow population to a given size then maintain
-//  target = "main_pop";            // Population(s) to manage.
-//  max_pop_size = pop_size;        // Maximum size of the population.
-//};
-NeighborPlacement grid_placement{
-  grid_height = 60;             // Height of the grid the population lives on
-  grid_width = 60;              // Width of the grid the population lives on
-  target = "main_pop";          // Population(s) to manage.
-  use_moore_neighborhood = 1;   // If true, use a Moore neighborhood.
-                                    // If false, use a von Neumann neighborhood
+MaxSizePlacement place_max_size { // Grow population to a given size then maintain
+  target = "main_pop";            // Population(s) to manage.
+  max_pop_size = pop_size;        // Maximum size of the population.
 };
 AnnotatePlacement_Position pos_annotater { // Store org's position as trait on placement.
   target = "main_pop";      // Population(s) to annotate
@@ -23,16 +15,8 @@ SchedulerProbabilistic scheduler { // Rations out updates to organisms based on 
   pop = "main_pop";             // Which population should we select parents from?
   avg_updates = 30;             // How many updates should organism receive on average?
   trait = "merit";              // Which trait provides the fitness value to use?
-  parent_trait = "child_merit"; // Does nothing if empty. Otherwise, on reproduction the 
-                                //    parent will reset their trait (as defined above) 
-                                //    with this.
   base_value = 1;               // What value should the scheduler use for organisms that have performed no tasks?
-  merit_scale_factor = 1;       // How should the scheduler scale merit?
-  death_age = 50;               // Organisms die from old age after executing 
-                                // death_age * genome length instructions. 
-                                // -1 for no death from old age
-  insts_executed_trait = "insts_executed"; 
-                                // The number of instructions this organism has executed
+  merit_scale_factor = 2;       // How should the scheduler scale merit?
 };
 VirtualCPU_Inst_Nop inst_lib_nop { // Nop instructions for VirtualCPUOrg
   target_pop = "main_pop";      // Population(s) to manage.
@@ -58,31 +42,39 @@ VirtualCPU_Inst_Replication inst_lib_repl { // Replication instructions for Virt
                                   // execute before its allowed to reproduce. Otherwise 
                                   // reproduction instructions do nothing.  Takes priority 
                                   // over `req_frac_inst_executed`; -1 to use fraction instead
-  req_frac_inst_executed = 0;   // The organism must have executed at least this fraction 
+  req_frac_inst_executed = 0 ;  // The organism must have executed at least this fraction 
                                   // of their genome to reproduce. Otherwise reproduction 
                                   // instructions do nothing. 
                                   // Overruled by `req_count_inst_executed`
 };
-EvalPatchHarvest patch_harvest {  // Evaluate organisms on their ability to follow a path.
-  target_pop = "main_pop";        // Which population(s) should we evaluate?
-  score_trait = "child_merit";    // Which trait stores path following performance?
-  state_trait = "state";          // Which trait stores organisms' path follow state?
-  movement_trait = "movements";   // Which trait will store a string containing the organism's
-                                  //    sequence of moves?
-  map_idx_trait = "map_idx";      // Which trait will store the index of the current map?
-  map_filenames = "../settings/EvalPatchHarvest/test_map_0.txt;../settings/EvalPatchHarvest/test_map_1.txt;../settings/EvalPatchHarvest/test_map_2.txt;../settings/EvalPatchHarvest/test_map_3.txt"; 
-                                  // List of map files to load, separated by semicolons(;)
-  score_exp_base = 2.0;           // Base of the merit exponential. Merit = this^score.
-  track_movement = 0;             // If true (1), track every move or turn the organism 
-                                  //    performs
-  nutrients_consumed_trait = "nutrients_consumed";  // Which trait will store the number of 
-                                                    //    nutrients the organism has consumed?
-  moves_off_path_trait = "moves_off_path";  // Which trait will store the number of times 
-                                            //    the org moved into an empty cell? 
-  verbose = 0;
+VirtualCPU_Inst_Dictionary inst_lib_dict { // Manipulation instructions for VirtualCPUOrg
+  target_pop = "main_pop";      // Population(s) to manage.
+  dictionary_trait_name = "dictionary"; // Name of the trait that stores
+                                        // the organism's dictionary
+};
+EvalCues eval_cues {      // Evaluate organisms on their ability to follow a path.
+  target_pop = "main_pop";  // Which population(s) should we evaluate?
+  score_trait = "child_merit";  // Which trait stores path following performance?
+  accuracy_trait = "accuracy";  // Which trait stores door accuracy?
+  state_trait = "state";      // Which trait stores organisms' path follow state?
+  cue_values = "1;rand;rand;";    // A semicolon-separated string of cue values. 
+                                // A numeric value is used as is, r/rand/random gives a random
+                                // cue for for each trial 
+  start_patterns = "";
+                                // List of all possible start patterns for the paths. 
+                                // Empty for random. Semicolons separate patterns, while 
+                                // commas separate door indices in each pattern. 
+                                // Indices start at 1 for non-exit doors.
+  correct_doors_trait = "correct_doors";// Which trait stores the number of doors correctly taken?
+  door_rooms_trait = "door_rooms";// Which trait stores the number of "door rooms" visited?
+  incorrect_doors_trait = "incorrect_doors";// Which trait stores the number of doors incorrectly taken?
+  correct_door_reward = 1;     // Reward for getting a single door correct
+  incorrect_door_penalty = 1;  // Penalty for getting a single door incorrect
+  incorrect_door_step = 0;     // Penalty for getting a single door incorrect
+  score_exp_base = 1.25; 
 };
 VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
-  site_point_mut_prob = 0.0075; // Per-site probability of a point mutations
+  site_point_mut_prob = 0.01; // Per-site probability of a point mutations
   site_insertion_mut_prob = 0;  // Per-site probability of a insertion mutations
   site_deletion_mut_prob = 0;   // Per-site probability of a deletion mutations
   genome_point_mut_prob = 0;        // Per-genome probability of a point mutations
@@ -92,7 +84,7 @@ VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
   init_random = 0;              // Should we randomize ancestor?  (0 = "blank" default)
   eval_time = 200;              // How many CPU cycles should we give organisms to run?
   input_name = "input";         // Name of variable to load inputs from.
-  output_name = "old_output";   // Name of variable to output results.
+  output_name = "unused_output";   // Name of variable to output results.
   genome_name = "genome";       // Where to store the genome?.
   genome_length_name = "genome_length";   // Where to store the genome's length? 
   position_name = "org_pos";    // Where to store the organism's position?.
@@ -100,18 +92,20 @@ VirtualCPUOrg avida_org {       // Organism consisting of Avida instructions.
   child_merit_name = "child_merit";// Name of variable corresponding to the organism's task performance that will be used to calculate CPU cylces given to offspring.
   initial_merit = 0.01;       // Initial value for merit (task performance)
   verbose = 0;
-  //initial_genome_filename = "../settings/VirtualCPUOrg/example_patch_harvest.org";
   initial_genome_filename = "../settings/VirtualCPUOrg/ancestor_repro.org";
                               // File that contains the gennome used to initialize organisms.
-  inst_set_input_filename = "../settings/VirtualCPUOrg/inst_set_patch_harvest.txt"; 
+  inst_set_input_filename = "../settings/VirtualCPUOrg/inst_set_repro_2.txt"; 
                               // File that contains the instruction set to use. 
                               // One instruction name per line. Order is maintained.
   inst_set_output_filename = "inst_set.txt";
-  expanded_nop_args = 1;        // If true, some instructions (e.g., math) will use multiple 
-                                  // nops to fully define the registers used
-  copy_influences_merit = 0;    // If true, the number of instructions copied (e.g., via 
-                                  // HCopy instruction)factor into offspring merit
-  insts_executed_trait = "insts_executed"; // Name of the trait that holds the number of instructions executed
+  expanded_nop_args = 1;        // If true, some instructions (e.g., math) will use multiple nops to fully define the registers used
+  use_speculative_execution = 1;// If true, we run as many instructions as possible and then 
+                                //    cache the results. Instructions that interact with the 
+                                //    population or other organisms will halt 
+                                //    speculative execution.
+  max_speculative_insts = -1; // Maximum number of instructions to speculatively execute. 
+                              //    -1 for genome length.
+
 };
 AnalyzeSystematics sys{
   data_file_name = "phylo/phylogenetic_data.csv";// Filename for systematics data file.
@@ -126,53 +120,66 @@ AnalyzeSystematics sys{
 Var dominant_genome;
 DataFile fit_file { filename="fitness.csv"; };
 fit_file.ADD_SETUP("dominant_genome = main_pop.CALC_MODE('genome')" );
-fit_file.ADD_COLUMN("merit_mean",       "main_pop.CALC_MEAN('child_merit')" );
-fit_file.ADD_COLUMN("merit_max",        "main_pop.CALC_MAX('child_merit')" );
-fit_file.ADD_COLUMN("dominant_genome",  "dominant_genome" );
-fit_file.ADD_COLUMN("nutrients_consumed_mean", "main_pop.CALC_MEAN('nutrients_consumed')");
-fit_file.ADD_COLUMN("moves_off_path_mean", "main_pop.CALC_MEAN('moves_off_path')");
+fit_file.ADD_COLUMN("merit_mean",      "main_pop.CALC_MEAN('child_merit')" );
+fit_file.ADD_COLUMN("merit_max",       "main_pop.CALC_MAX('child_merit')" );
+fit_file.ADD_COLUMN("accuracy_mean",   "main_pop.CALC_MEAN('accuracy')" );
+fit_file.ADD_COLUMN("accuracy_max",    "main_pop.CALC_MAX('accuracy')" );
+fit_file.ADD_COLUMN("dominant_genome", "dominant_genome" );
+fit_file.ADD_COLUMN("genome_length_mean", "main_pop.CALC_MEAN('genome_length')" );
+fit_file.ADD_COLUMN("door_rooms_mean", "main_pop.CALC_MEAN('door_rooms')" );
+fit_file.ADD_COLUMN("correct_doors_mean", "main_pop.CALC_MEAN('correct_doors')" );
+fit_file.ADD_COLUMN("incorrect_doors_mean", "main_pop.CALC_MEAN('incorrect_doors')" );
+fit_file.ADD_COLUMN("doors_taken_0_mean", "main_pop.CALC_MEAN('doors_taken_0')" );
+fit_file.ADD_COLUMN("doors_correct_0_mean", "main_pop.CALC_MEAN('doors_correct_0')" );
+fit_file.ADD_COLUMN("doors_taken_1_mean", "main_pop.CALC_MEAN('doors_taken_1')" );
+fit_file.ADD_COLUMN("doors_correct_1_mean", "main_pop.CALC_MEAN('doors_correct_1')" );
+fit_file.ADD_COLUMN("doors_taken_2_mean", "main_pop.CALC_MEAN('doors_taken_2')" );
+fit_file.ADD_COLUMN("doors_correct_2_mean", "main_pop.CALC_MEAN('doors_correct_2')" );
 
 DataFile max_file { filename="max_org.csv"; };
 OrgList best_org;
 max_file.ADD_SETUP("best_org = main_pop.FIND_MAX('child_merit')" );
+max_file.ADD_COLUMN("genome",       "best_org.TRAIT('genome')" );
 max_file.ADD_COLUMN("merit",       "best_org.TRAIT('child_merit')" );
 max_file.ADD_COLUMN("merit_given", "best_org.TRAIT('merit')" );
 max_file.ADD_COLUMN("gen", "best_org.TRAIT('generation')" );
-max_file.ADD_COLUMN("genome", "best_org.TRAIT('genome')" );
-max_file.ADD_COLUMN("nutrients_consumed_mean", "best_org.TRAIT('nutrients_consumed')");
-max_file.ADD_COLUMN("moves_off_path_mean",     "best_org.TRAIT('moves_off_path')");
-//max_file.ADD_COLUMN("movements", "best_org.TRAIT('movements')" );
-max_file.ADD_COLUMN("map_idx", "best_org.TRAIT('map_idx')" );
-
-//DataFile pop_file { filename="pop_structure.txt"; };
-//Var pop_structure;
-//pop_file.ADD_SETUP("pop_structure = main_pop.GET_AS_STRING()");
-//pop_file.ADD_COLUMN("pop", "pop_structure");
+max_file.ADD_COLUMN("accuracy", "best_org.TRAIT('accuracy')" );
+max_file.ADD_COLUMN("door_rooms", "best_org.TRAIT('door_rooms')" );
+max_file.ADD_COLUMN("correct_doors", "best_org.TRAIT('correct_doors')" );
+max_file.ADD_COLUMN("incorrect_doors", "best_org.TRAIT('incorrect_doors')" );
+max_file.ADD_COLUMN("doors_taken_0", "best_org.TRAIT('doors_taken_0')" );
+max_file.ADD_COLUMN("doors_correct_0", "best_org.TRAIT('doors_correct_0')" );
+max_file.ADD_COLUMN("doors_taken_1", "best_org.TRAIT('doors_taken_1')" );
+max_file.ADD_COLUMN("doors_correct_1", "best_org.TRAIT('doors_correct_1')" );
+max_file.ADD_COLUMN("doors_taken_2", "best_org.TRAIT('doors_taken_2')" );
+max_file.ADD_COLUMN("doors_correct_2", "best_org.TRAIT('doors_correct_2')" );
 
 @START() {
   PRINT("random_seed = ", random_seed, "\n");  // Print seed at run start.
   main_pop.INJECT("avida_org", 1);             // Inject ancestor organism 
-  //main_pop.SET_GENOME(0, "IIcFGnccgFFFFMcdmcFFFpacEFObNNcdGO");
-};
+};;
 
 Var avg_gen; 
 @UPDATE(Var ud) {
   scheduler.SCHEDULE();
   PRINT("UD:", GET_UPDATE(),
-        "  pop_size=", main_pop.SIZE(),
-        "  alive=", main_pop.NUM_ORGS(),
+        //"  pop_size=", main_pop.SIZE(),
+        "  num_orgs=", main_pop.NUM_ORGS(),
         "  merit_mean=", main_pop.CALC_MEAN("child_merit"),
         "  merit_max=", main_pop.CALC_MAX("child_merit"),
         "  gen_mean=", main_pop.CALC_MEAN("generation"),
         //"  gen_max=", main_pop.CALC_MAX("generation"),
-        "\n\tgenome_length_max=", main_pop.CALC_MAX("genome_length"),
-        "  genome_length_mean=", main_pop.CALC_MEAN("genome_length")
+        //"  genome_length_max=", main_pop.CALC_MAX("genome_length"),
+        "\n\tlength_mean=", main_pop.CALC_MEAN("genome_length"),
+        "  mean_accuracy=", main_pop.CALC_MEAN("accuracy"),
+        "  mean_cor=", main_pop.CALC_MEAN("correct_doors"),
+        "  max_cor=", main_pop.CALC_MAX("correct_doors"),
+        "\n\tmean_cor_left=", main_pop.CALC_MEAN("doors_correct_1"),
+        "  mean_cor_right=", main_pop.CALC_MEAN("doors_correct_2")
        );
   fit_file.WRITE();
   max_file.WRITE();
-  //pop_file.WRITE();
   avg_gen = main_pop.CALC_MEAN("generation");
-  ////grid_placement.PRINT(main_pop);
   IF(avg_gen >= max_gens) EXIT();
-  IF(ud >= max_updates) EXIT();
 };
+

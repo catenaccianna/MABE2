@@ -16,6 +16,7 @@
 #include "evaluate/games/EvalPathFollow.hpp"
 #include "evaluate/games/EvalPatchHarvest.hpp"
 #include "evaluate/games/EvalDoors.hpp"
+#include "evaluate/games/EvalCues.hpp"
 #include "evaluate/static/EvalCountBits.hpp"
 #include "evaluate/static/EvalDiagnostic.hpp"
 #include "evaluate/static/EvalMatchBits.hpp"
@@ -32,7 +33,7 @@
 #include "evaluate/callable/EvalTaskEqu.hpp"
 #include "evaluate/static/EvalPacking.hpp"
 #include "evaluate/static/EvalRandom.hpp"
-#include "evaluate/static/EvalVirtualCPU.hpp"
+#include "evaluate/static/EvalGeneric.hpp"
 
 // Placement Modules
 #include "placement/AnnotatePlacement_Position.hpp"
@@ -62,3 +63,6 @@
 #include "orgs/instructions/VirtualCPU_Inst_Manipulation.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Replication.hpp"
 #include "orgs/instructions/VirtualCPU_Inst_Dictionary.hpp"
+
+// Tools
+#include "tools/MutantGenerator.hpp"

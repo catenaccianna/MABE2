@@ -30,6 +30,8 @@ namespace mabe {
     emp::StateGridStatus status;  ///< Stores position, direction, and interfaces with grid 
     double raw_score;             /**< Number of unique valid tiles visited minus the number
                                        of steps taken off the path (not unique) */
+    size_t nutrients_consumed = 0;///< Number of unique nutrient positions visited by org
+    size_t moves_off_path = 0;    ///< Number of movements org made into empty tiles
 
     PatchHarvestState(): initialized(false), cur_map_idx(0), visited_tiles(), status(),
         raw_score(0) { ; }
@@ -57,7 +59,13 @@ namespace mabe {
   /// \brief Information of a single path that was loaded from file
   struct MapData{
     emp::StateGrid grid;  ///< The tile data of the path and surrounding emptiness 
-    size_t total_nutrients; ///< Number of good ("path") tiles in this map 
+    size_t start_x;       ///< X coordinate of starting position
+    size_t start_y;       ///< Y coordinate of starting position
+    int start_facing;     /**< Facing direction for new organisms. 
+                              0=UL, 1=Up, 2=UR, 3=Right, 4=DR, 5=Down, 6=DL, 
+                              7=Left (+=Clockwise) Matches StateGridStatus */
+    size_t total_nutrients; ///< Number of nutrients (edge or normal) on this map 
+    double merit_exp_max; ///< On this map, merit will cap at 2^(this value)
 
     MapData() : total_nutrients(0){;} 
     MapData(emp::StateGrid& _grid, size_t _total_nutrients) 
@@ -76,6 +84,8 @@ namespace mabe {
 
     emp::vector<MapData> map_data_vec; ///< All the relevant data for each map loaded
     emp::Random& rand;          ///< Reference to the main random number generator of MABE
+    double score_exp_base = 2; /**< The base of the merit exponential 
+                                    (raised to the score power)*/
     
     public: 
     bool verbose = false;
@@ -90,6 +100,16 @@ namespace mabe {
       if(state.raw_score < 0) return 0;
       return state.raw_score / map_data_vec[state.cur_map_idx].total_nutrients;
     }
+    double GetExponentialScore(PatchHarvestState& state) const{
+      if(state.raw_score < 0) return 0;
+      return std::pow(score_exp_base, state.raw_score);
+    }
+    double GetNormalizedExponentialScore(PatchHarvestState& state) const{
+      // Avida2 style
+      if(state.raw_score < 0) return 0;
+      const MapData& path = GetCurPath(state);
+      return std::pow(score_exp_base, path.merit_exp_max * (state.raw_score / path.total_nutrients));
+    }
 
     /// Load a single map for the path following task
     template <typename... Ts>
@@ -97,6 +117,8 @@ namespace mabe {
       // Create our MapData to be filled
       map_data_vec.emplace_back();
       MapData& map_data = *(map_data_vec.rbegin()); 
+      // Ensure map is toroidal (important for maps with multiple patches)
+      map_data.grid.SetIsToroidal(true);
       // Set up the possible tile types for the grid (we ignore the score value)
       map_data.grid.AddState(Tile::EMPTY,       'o', 1.0, "empty");
       map_data.grid.AddState(Tile::NUTRIENT,    'N', 1.0, "nutrient");
@@ -120,6 +142,26 @@ namespace mabe {
           }
         }
       }
+      if(!map_data.grid.HasMetadata("start_facing")){
+        emp_error("Error! Map does not have metadata \"start_facing\"!");
+      }
+      map_data.start_facing = 
+          static_cast<int>(map_data.grid.GetMetadata("start_facing").AsDouble());
+      if(!map_data.grid.HasMetadata("start_x")){
+        emp_error("Error! Map does not have metadata \"start_x\"!");
+      }
+      map_data.start_x = 
+          static_cast<int>(map_data.grid.GetMetadata("start_x").AsDouble());
+      if(!map_data.grid.HasMetadata("start_y")){
+        emp_error("Error! Map does not have metadata \"start_y\"!");
+      }
+      map_data.start_y = 
+          static_cast<int>(map_data.grid.GetMetadata("start_y").AsDouble());
+      if(!map_data.grid.HasMetadata("merit_exp_max")){
+        emp_error("Error! Map does not have metadata \"merit_exp_max\"!");
+      }
+      map_data.merit_exp_max = 
+          static_cast<int>(map_data.grid.GetMetadata("merit_exp_max").AsDouble());
       std::cout << "Map #" << (map_data_vec.size() - 1) << " is " 
         << map_data.grid.GetWidth() << "x" << map_data.grid.GetHeight() << ", with " 
         << map_data.total_nutrients << " total nutrients!" << std::endl;
@@ -143,11 +185,13 @@ namespace mabe {
       state.visited_tiles.Resize(map_data.grid.GetSize()); 
       state.visited_tiles.Clear();
       state.status.Set(
-        map_data.grid.GetWidth() / 2,
-        map_data.grid.GetHeight() / 2,
-        3
+        map_data.start_x,
+        map_data.start_y,
+        map_data.start_facing 
       );
       state.raw_score = 0;
+      state.nutrients_consumed = 0;
+      state.moves_off_path = 0;
     }
     
     /// Fetch the data of the state's current path
@@ -193,9 +237,11 @@ namespace mabe {
       if(verbose) std::cout << "[HARVEST] move" << std::endl;
       state.status.Move(GetCurPath(state).grid, scale_factor);
       double score = GetCurrentPosScore(state);
+      if(score == 1) state.nutrients_consumed++;
+      else if(score == -1) state.moves_off_path++;
       state.raw_score += score;
       if(verbose) std::cout << "Score: " << state.raw_score << std::endl;
-      return GetNormalizedScore(state);
+      return GetNormalizedExponentialScore(state);
     }
     
     /// Rotate the organism clockwise by 45 degrees
@@ -216,7 +262,7 @@ namespace mabe {
     //
     // Note: While it sounds like this should be a const method, it is possible this is the
     //  organism's first interaction with the path, so we may need to initialize it
-    uint32_t Sense(PatchHarvestState& state) { 
+    int32_t Sense(PatchHarvestState& state) { 
       if(!state.initialized) InitializeState(state);
       switch(state.status.Scan(GetCurPath(state).grid)){
         case Tile::EMPTY:
@@ -243,14 +289,21 @@ namespace mabe {
     using inst_func_t = VirtualCPUOrg::inst_func_t;
 
   private:
-    std::string score_trait = "score";   ///< Name of trait for organism performance
-    std::string state_trait ="state";    ///< Name of trait that stores the path follow state
-    std::string map_filenames="";        ///< ;-separated list map filenames to load
+    std::string score_trait = "score";      ///< Name of trait for organism performance
+    std::string state_trait ="state";       /**< Name of trait that stores the patch
+                                                  harvest state **/
+    std::string map_filenames="";           ///< ;-separated list map filenames to load
     std::string movement_trait="movements"; ///< Trait holding all org movements 
-    std::string map_idx_trait="map_idx"; ///< Trait holding the index of the current map
-    PatchHarvestEvaluator evaluator;     /**< The evaluator that does all of the actually 
-                                            computing and bookkeeping for the path follow 
-                                            task */
+    std::string map_idx_trait="map_idx";    ///< Trait holding the index of the current map
+    /// Trait holding the number of unique nutrient tiles the organism has entered
+    std::string nutrients_consumed_trait = "nutrients_consumed";
+    /// Trait holding the number of movements the organism has made onto empty tiles
+    std::string moves_off_path_trait = "moves_off_path";
+    bool track_movement = true;             /**< If true, track every move or turn the 
+                                                  organism performs **/
+    PatchHarvestEvaluator evaluator;        /**< The evaluator that does all of the actually 
+                                                  computing and bookkeeping for the patch 
+                                                  harvest task */
     int pop_id = 0;              /**< ID of the population to evaluate 
                                          (and provide instructions to) */
 
@@ -279,16 +332,30 @@ namespace mabe {
           "Which trait will store a string containing the organism's sequence of moves?");
       LinkVar(map_idx_trait, "map_idx_trait", 
           "Which trait will store the index of the current map?");
+      LinkVar(nutrients_consumed_trait, "nutrients_consumed_trait", 
+          "Which trait will store the number of nutrients the organism has consumed?");
+      LinkVar(moves_off_path_trait, "moves_off_path_trait", 
+          "Which trait will store the number of times the org moved into an empty cell?");
       LinkVar(evaluator.verbose, "verbose", 
           "If true (1), prints extra information about the organisms actions");
+      LinkVar(evaluator.score_exp_base, "score_exp_base", 
+          "Base of the merit exponential. Merit = this^score.");
+      LinkVar(track_movement, "track_movement", 
+          "If true (1), track every move or turn the organism performs");
     }
     
     /// Set up organism traits, load maps, and provide instructions to organisms
     void SetupModule() override {
       AddSharedTrait<double>(score_trait, "Path following score", 0.0);
       AddOwnedTrait<PatchHarvestState>(state_trait, "Organism's patch harvest state", { }); 
-      AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
-      AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", { }); 
+      AddOwnedTrait<size_t>(nutrients_consumed_trait, 
+          "Number of unique nutrient tiles the organism has visited", 0); 
+      AddOwnedTrait<size_t>(moves_off_path_trait, 
+          "Number of times organism has moved onto an empty tile", 0); 
+      if(track_movement){
+        AddOwnedTrait<std::string>(movement_trait, "Organism's movements", { }); 
+      }
+      AddOwnedTrait<size_t>(map_idx_trait, "Organism's current map (as an index)", 0); 
       evaluator.LoadAllMaps(map_filenames);
       SetupInstructions();
     }
@@ -303,8 +370,12 @@ namespace mabe {
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             double score = evaluator.Move(state);
             hw.SetTrait<double>(score_trait, score);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "M");
+            hw.SetTrait<size_t>(nutrients_consumed_trait, state.nutrients_consumed);
+            hw.SetTrait<size_t>(moves_off_path_trait, state.moves_off_path);
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "M");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
@@ -315,8 +386,10 @@ namespace mabe {
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             evaluator.RotateRight(state);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "R");
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "R");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
@@ -327,8 +400,10 @@ namespace mabe {
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& /*inst*/){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
             evaluator.RotateLeft(state);
-            hw.SetTrait<std::string>(movement_trait, 
-                hw.GetTrait<std::string>(movement_trait) + "L");
+            if(track_movement){
+              hw.SetTrait<std::string>(movement_trait, 
+                  hw.GetTrait<std::string>(movement_trait) + "L");
+            }
             hw.SetTrait<size_t>(map_idx_trait, state.cur_map_idx);
           };
         action_map.AddFunc<void, VirtualCPUOrg&, const VirtualCPUOrg::inst_t&>(
@@ -338,7 +413,7 @@ namespace mabe {
         inst_func_t func_sense = 
           [this](VirtualCPUOrg& hw, const VirtualCPUOrg::inst_t& inst){
             PatchHarvestState& state = hw.GetTrait<PatchHarvestState>(state_trait);
-            uint32_t val = evaluator.Sense(state);
+            int32_t val = evaluator.Sense(state);
             size_t reg_idx = inst.nop_vec.empty() ? 1 : inst.nop_vec[0];
             hw.regs[reg_idx] = val;
             if(!inst.nop_vec.empty()) hw.AdvanceIP(1);

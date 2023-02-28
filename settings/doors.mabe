@@ -57,7 +57,7 @@ EvalDoors eval_doors {      // Evaluate organisms on their ability to follow a p
   score_trait = "child_merit";  // Which trait stores path following performance?
   accuracy_trait = "accuracy";  // Which trait stores door accuracy?
   state_trait = "state";      // Which trait stores organisms' path follow state?
-  cue_values = "0;-1;-1;";    // A semicolon-separated string of cue values. 
+  cue_values = "-1;rand;rand;";    // A semicolon-separated string of cue values. 
                                 // A non-negative value is used as is, -1 gives a random cue 
                                 // for each trial (first value is the exit)
   start_patterns = "";
@@ -174,7 +174,8 @@ Var avg_gen;
 @UPDATE(Var ud) {
   scheduler.SCHEDULE();
   PRINT("UD:", GET_UPDATE(),
-        "  pop_size=", main_pop.SIZE(),
+        //"  pop_size=", main_pop.SIZE(),
+        "  num_orgs=", main_pop.NUM_ORGS(),
         "  merit_mean=", main_pop.CALC_MEAN("child_merit"),
         "  merit_max=", main_pop.CALC_MAX("child_merit"),
         "  gen_mean=", main_pop.CALC_MEAN("generation"),

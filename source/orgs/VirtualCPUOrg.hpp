@@ -186,6 +186,7 @@ namespace mabe {
       std::string num_insts_executed_name = "insts_executed"; /**< Trait name for the number
                                                                     of instructions 
                                                                     executed */
+      bool replicate_via_inst = true; /// Do orgs reproduce via instruction?
       
       // Internal use
       /// Distribution of number of point mutations to occur.
@@ -285,6 +286,7 @@ namespace mabe {
       Organism::SetTrait<size_t>(SharedData().genome_length_name, GetGenomeSize());
       Organism::SetTrait<double>(SharedData().child_merit_name, 
           SharedData().initial_merit); 
+      Organism::SetTrait<size_t>(SharedData().num_insts_executed_name, 0);
     }
 
     /// Create an ancestral organism and load in values from configuration file
@@ -315,13 +317,15 @@ namespace mabe {
     emp::Ptr<Organism> MakeOffspringOrganism(emp::Random & random) const {
       // Create and mutate
       auto offspring = OrgType::Clone().DynamicCast<VirtualCPUOrg>();
-      const genome_t offspring_genome = 
-          GetTrait<genome_t>(SharedData().offspring_genome_name);
-      offspring->genome.resize(offspring_genome.size(), GetDefaultInst());
-      std::copy(
-          offspring_genome.begin(),
-          offspring_genome.end(),
-          offspring->genome.begin());
+      if(SharedData().replicate_via_inst){
+        const genome_t offspring_genome = 
+            GetTrait<genome_t>(SharedData().offspring_genome_name);
+        offspring->genome.resize(offspring_genome.size(), GetDefaultInst());
+        std::copy(
+            offspring_genome.begin(),
+            offspring_genome.end(),
+            offspring->genome.begin());
+      }
       offspring->ResetWorkingGenome();
       offspring->Mutate(random);
       offspring->Reset();
@@ -344,6 +348,8 @@ namespace mabe {
           SharedData().genome_name, offspring->GetGenomeString());
       offspring->Organism::SetTrait<size_t>(
           SharedData().genome_length_name, offspring->GetGenomeSize());
+      offspring->Organism::SetTrait<size_t>(
+          SharedData().num_insts_executed_name, 0);
       offspring->Organism::GetTrait<emp::vector<data_t>>(SharedData().output_name).clear();
       offspring.DynamicCast<VirtualCPUOrg>()->ResetHardware();
       offspring.DynamicCast<VirtualCPUOrg>()->insts_speculatively_executed = 0;
@@ -450,6 +456,12 @@ namespace mabe {
                       "copy_influences_merit",
                       "If 1, the number of instructions copied (e.g., via HCopy instruction)"
                       "factor into offspring merit");
+      GetManager().LinkVar(SharedData().num_insts_executed_name, 
+                      "insts_executed_trait",
+                      "Name of the trait that holds the number of instructions executed");
+      GetManager().LinkVar(SharedData().replicate_via_inst, 
+                      "replicate_via_inst",
+                      "Do organisms self replicate via executing an instruction?");
     }
 
     /// Set up this organism type with the traits it need to track and initialize 
