@@ -186,6 +186,7 @@ namespace mabe {
       std::string num_insts_executed_name = "insts_executed"; /**< Trait name for the number
                                                                     of instructions 
                                                                     executed */
+      bool replicate_via_inst = true; /// Do orgs reproduce via instruction?
       
       // Internal use
       /// Distribution of number of point mutations to occur.
@@ -316,13 +317,15 @@ namespace mabe {
     emp::Ptr<Organism> MakeOffspringOrganism(emp::Random & random) const {
       // Create and mutate
       auto offspring = OrgType::Clone().DynamicCast<VirtualCPUOrg>();
-      const genome_t offspring_genome = 
-          GetTrait<genome_t>(SharedData().offspring_genome_name);
-      offspring->genome.resize(offspring_genome.size(), GetDefaultInst());
-      std::copy(
-          offspring_genome.begin(),
-          offspring_genome.end(),
-          offspring->genome.begin());
+      if(SharedData().replicate_via_inst){
+        const genome_t offspring_genome = 
+            GetTrait<genome_t>(SharedData().offspring_genome_name);
+        offspring->genome.resize(offspring_genome.size(), GetDefaultInst());
+        std::copy(
+            offspring_genome.begin(),
+            offspring_genome.end(),
+            offspring->genome.begin());
+      }
       offspring->ResetWorkingGenome();
       offspring->Mutate(random);
       offspring->Reset();
@@ -377,7 +380,7 @@ namespace mabe {
       SetInputs(Organism::GetTrait<emp::vector<data_t>>(SharedData().input_name));
 
       // Run the code.
-      //Process(SharedData().eval_time, SharedData().verbose);
+      Process(SharedData().eval_time, SharedData().verbose);
     }
 
     /// Return a reference to the instruction library of the organism
@@ -456,6 +459,9 @@ namespace mabe {
       GetManager().LinkVar(SharedData().num_insts_executed_name, 
                       "insts_executed_trait",
                       "Name of the trait that holds the number of instructions executed");
+      GetManager().LinkVar(SharedData().replicate_via_inst, 
+                      "replicate_via_inst",
+                      "Do organisms self replicate via executing an instruction?");
     }
 
     /// Set up this organism type with the traits it need to track and initialize 
