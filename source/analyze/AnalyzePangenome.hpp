@@ -14,8 +14,7 @@
 #include "../core/Module.hpp"
 #include "../core/data_collect.hpp"
 
-//#include "../../../../../Desktop/debruijn_pangenomes/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
-#include "../../../../../Desktop/working_dbg/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
+#include "../../../../../Desktop/dbg/pangenomes-for-evolutionary-computation/DeBruijn/DeBruijnGraph.hpp"
 
 namespace mabe {
 
@@ -112,11 +111,10 @@ namespace mabe {
     void BeforePlacement(Organism & org, OrgPosition pos, OrgPosition parent_pos) override {
       pangenome_graph.add_sequence(org.ToString());
     }
-
-    void BeforeMutate(Organism & org) override {
-      std::cout<< " mutate ";
+/**
+    void BeforeMutate(Organism & org) override { // does not seem as if we are going into this function
       org.GenerateOutput();
-      std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
+      //std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
       // modify the organism & do the actual crossover
       string new_genome;
       if(count_kmers){
@@ -127,9 +125,9 @@ namespace mabe {
       }
       org.GenomeFromString(new_genome); //pass in organism reference and change its genome
       org.GenerateOutput();
-      std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
+      //std::cout<< org.GetTraitAsDouble(org.GetTraitID("fitness"))<<" ";
     }
-
+*/
     // bool Crossover(Collection & orgs) {
       // std::cout<<" crossover ";
       // string new_genome;
@@ -156,15 +154,15 @@ namespace mabe {
 
     bool Crossover(Collection & orgs) {
       string new_genome;
-      mabe::Collection avlive_org (orgs.GetAlive());
-      for (Organism & org : avlive_org) {
+      mabe::Collection alive_org (orgs.GetAlive());
+      for (Organism & org : alive_org) {
         // initial fitness & genome
         // generate new genome from DeBruijn Graph
-        new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, count_kmers, variable_length);
-        std::cout<<"NEW GENOME "<<new_genome<<"\n[replace genome]\n\n";
+        new_genome = pangenome_graph.modify_org_variable_len(control.GetRandom(), org.ToString());
+        //new_genome = pangenome_graph.modify_org(control.GetRandom(), org.ToString(), probability, count_kmers, variable_length);
+        std::cout<<"NEW GENOME: "<<new_genome<<std::endl;
         org.GenomeFromString(new_genome); //change organism's genome to new string
                                            //fitness value post-DBGraph modification
-        std::cout<<"New genome modification "<<org.ToString()<<std::endl;
       }
       return true; // @note selectTournament returns collection, evalNK returns double, what do i return??
     }
